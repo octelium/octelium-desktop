@@ -16,6 +16,18 @@ trap {
 }
 
 $ServiceName = "OcteliumDaemon"
+
+function Wait-ServiceDeletion {
+    for ($attempt = 0; $attempt -lt 60; $attempt++) {
+        & sc.exe query $ServiceName 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 1060) {
+            return
+        }
+        Start-Sleep -Milliseconds 500
+    }
+    throw "Timed out deleting the Octelium Desktop daemon service"
+}
+
 $Service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
 
 if ($null -ne $Service -and $Service.Status -ne "Stopped") {
@@ -38,14 +50,8 @@ if ($Action -eq "Uninstall") {
     if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 1072) {
         throw "Could not delete the Octelium Desktop daemon service"
     }
-    for ($attempt = 0; $attempt -lt 60; $attempt++) {
-        & sc.exe query $ServiceName 2>&1 | Out-Null
-        if ($LASTEXITCODE -eq 1060) {
-            exit 0
-        }
-        Start-Sleep -Milliseconds 500
-    }
-    throw "Timed out deleting the Octelium Desktop daemon service"
+    Wait-ServiceDeletion
+    exit 0
 }
 
 $ExecutablePath = [System.IO.Path]::GetFullPath($ExecutablePath)
@@ -56,14 +62,16 @@ if (-not (Test-Path -LiteralPath $ExecutablePath -PathType Leaf)) {
 $StatePath = Join-Path ([Environment]::GetFolderPath("CommonApplicationData")) "Octelium Desktop\daemon-state"
 New-Item -ItemType Directory -Path $StatePath -Force | Out-Null
 $BinaryPath = '"' + $ExecutablePath + '" --homedir "' + $StatePath + '" daemon'
-if ($null -eq $Service) {
-    New-Service -Name $ServiceName -BinaryPathName $BinaryPath -DisplayName "Octelium Desktop Daemon" -Description "Runs the privileged daemon used by Octelium Desktop" -StartupType Automatic | Out-Null
-} else {
-    & sc.exe config $ServiceName "binPath=" $BinaryPath "start=" "auto" "obj=" "LocalSystem" | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-        throw "Could not configure the Octelium Desktop daemon service"
+if ($null -ne $Service) {
+    $Service.Dispose()
+    $Service = $null
+    & sc.exe delete $ServiceName | Out-Null
+    if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 1072) {
+        throw "Could not replace the Octelium Desktop daemon service (sc.exe exit code $LASTEXITCODE)"
     }
 }
+Wait-ServiceDeletion
+New-Service -Name $ServiceName -BinaryPathName $BinaryPath -DisplayName "Octelium Desktop Daemon" -Description "Runs the privileged daemon used by Octelium Desktop" -StartupType Automatic | Out-Null
 
 & sc.exe description $ServiceName "Runs the privileged daemon used by Octelium Desktop" | Out-Null
 if ($LASTEXITCODE -ne 0) {
