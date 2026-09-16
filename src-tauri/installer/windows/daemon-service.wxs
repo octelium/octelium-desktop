@@ -4,17 +4,16 @@
     <DirectoryRef Id="INSTALLDIR">
       <Component Id="OcteliumDesktopDaemonMarker" Guid="*" Win64="yes">
         <RegistryValue Root="HKLM" Key="Software\Octelium\Octelium Desktop" Name="DaemonService" Type="integer" Value="1" KeyPath="yes" />
+        <ServiceControl Id="OcteliumDesktopDaemonControl" Name="OcteliumDaemon" Stop="both" Wait="yes" />
       </Component>
     </DirectoryRef>
     <ComponentGroup Id="OcteliumDesktopDaemonComponents">
       <ComponentRef Id="OcteliumDesktopDaemonMarker" />
     </ComponentGroup>
-    <CustomAction Id="StopOcteliumDesktopDaemon" Directory="INSTALLDIR" ExeCommand="powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;.\install-daemon.ps1&quot; -Action Stop" Execute="deferred" Impersonate="no" Return="check" />
     <CustomAction Id="InstallOcteliumDesktopDaemon" Directory="INSTALLDIR" ExeCommand="powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;.\install-daemon.ps1&quot; -Action Install -ExecutablePath &quot;.\octelium-desktop-daemon.exe&quot;" Execute="deferred" Impersonate="no" Return="check" />
     <CustomAction Id="RollbackOcteliumDesktopDaemon" Directory="INSTALLDIR" ExeCommand="powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;.\install-daemon.ps1&quot; -Action Uninstall" Execute="rollback" Impersonate="no" Return="ignore" />
     <CustomAction Id="UninstallOcteliumDesktopDaemon" Directory="INSTALLDIR" ExeCommand="powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;.\install-daemon.ps1&quot; -Action Uninstall" Execute="deferred" Impersonate="no" Return="check" />
     <InstallExecuteSequence>
-      <Custom Action="StopOcteliumDesktopDaemon" Before="UninstallOcteliumDesktopDaemon">Installed</Custom>
       <Custom Action="UninstallOcteliumDesktopDaemon" Before="RemoveFiles">REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE</Custom>
       <Custom Action="RollbackOcteliumDesktopDaemon" Before="InstallOcteliumDesktopDaemon">NOT Installed AND NOT WIX_UPGRADE_DETECTED</Custom>
       <Custom Action="InstallOcteliumDesktopDaemon" After="InstallFiles">NOT REMOVE</Custom>

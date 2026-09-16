@@ -7,6 +7,14 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$InstallerLogDir = Join-Path ([Environment]::GetFolderPath("CommonApplicationData")) "Octelium Desktop"
+$InstallerLogPath = Join-Path $InstallerLogDir "installer-error.log"
+New-Item -ItemType Directory -Path $InstallerLogDir -Force | Out-Null
+trap {
+    $_ | Format-List * -Force | Out-File -LiteralPath $InstallerLogPath -Force
+    exit 1
+}
+
 $ServiceName = "OcteliumDaemon"
 $Service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
 
