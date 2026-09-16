@@ -20,13 +20,24 @@ if ($Action -eq "Stop") {
 }
 
 if ($Action -eq "Uninstall") {
-    if ($null -ne $Service) {
-        & sc.exe delete $ServiceName | Out-Null
-        if ($LASTEXITCODE -ne 0) {
-            throw "Could not delete the Octelium Desktop daemon service"
-        }
+    if ($null -eq $Service) {
+        exit 0
     }
-    exit 0
+
+    $Service.Dispose()
+    $Service = $null
+    & sc.exe delete $ServiceName | Out-Null
+    if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 1072) {
+        throw "Could not delete the Octelium Desktop daemon service"
+    }
+    for ($attempt = 0; $attempt -lt 60; $attempt++) {
+        & sc.exe query $ServiceName 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 1060) {
+            exit 0
+        }
+        Start-Sleep -Milliseconds 500
+    }
+    throw "Timed out deleting the Octelium Desktop daemon service"
 }
 
 $ExecutablePath = [System.IO.Path]::GetFullPath($ExecutablePath)

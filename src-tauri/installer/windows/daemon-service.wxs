@@ -9,8 +9,6 @@
     <ComponentGroup Id="OcteliumDesktopDaemonComponents">
       <ComponentRef Id="OcteliumDesktopDaemonMarker" />
     </ComponentGroup>
-  </Fragment>
-  <Fragment>
     <CustomAction Id="StopOcteliumDesktopDaemon" Directory="INSTALLDIR" ExeCommand="powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;.\install-daemon.ps1&quot; -Action Stop" Execute="deferred" Impersonate="no" Return="check" />
     <CustomAction Id="InstallOcteliumDesktopDaemon" Directory="INSTALLDIR" ExeCommand="powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;.\install-daemon.ps1&quot; -Action Install -ExecutablePath &quot;.\octelium-desktop-daemon.exe&quot;" Execute="deferred" Impersonate="no" Return="check" />
     <CustomAction Id="RollbackOcteliumDesktopDaemon" Directory="INSTALLDIR" ExeCommand="powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;.\install-daemon.ps1&quot; -Action Uninstall" Execute="rollback" Impersonate="no" Return="ignore" />

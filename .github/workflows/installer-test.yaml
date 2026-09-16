@@ -170,6 +170,7 @@ jobs:
           }
 
           function Get-DaemonExecutable {
+              param([string]$Phase)
               $service = $null
               for ($attempt = 0; $attempt -lt 30; $attempt++) {
                   $service = Get-CimInstance Win32_Service -Filter "Name='OcteliumDaemon'" -ErrorAction SilentlyContinue
@@ -179,9 +180,11 @@ jobs:
                   Start-Sleep -Seconds 1
               }
               if ($null -eq $service -or $service.State -ne "Running" -or $service.StartMode -ne "Auto") {
+                  $service | Format-List Name, State, StartMode, ExitCode, PathName | Out-String | Write-Host
+                  & sc.exe qc OcteliumDaemon
                   & sc.exe queryex OcteliumDaemon
-                  Get-WinEvent -FilterHashtable @{ LogName = "System"; ProviderName = "Service Control Manager" } -MaxEvents 20 -ErrorAction SilentlyContinue | Format-List | Out-String | Write-Host
-                  throw "The Octelium Desktop daemon service is not running automatically"
+                  Get-WinEvent -FilterHashtable @{ LogName = "System"; ProviderName = "Service Control Manager"; StartTime = (Get-Date).AddMinutes(-10) } -MaxEvents 200 -ErrorAction SilentlyContinue | Where-Object Message -Match "Octelium" | Format-List | Out-String | Write-Host
+                  throw "The Octelium Desktop daemon service is not running automatically after $Phase"
               }
 
               $match = [regex]::Match($service.PathName, '^"([^"]+)"|^(\S+)')
@@ -197,19 +200,19 @@ jobs:
               $baseline = Get-ChildItem artifact -Recurse -Filter upgrade-baseline-*.msi | Select-Object -First 1
               if ($null -eq $installer -or $null -eq $baseline) { throw "MSI installers not found" }
               Invoke-Checked -FilePath msiexec.exe -ArgumentList @("/i", "`"$($baseline.FullName)`"", "/qn", "/norestart")
-              $daemonPath = Get-DaemonExecutable
+              $daemonPath = Get-DaemonExecutable -Phase "baseline MSI install"
               $arguments = @("/i", "`"$($installer.FullName)`"", "/qn", "/norestart")
               Invoke-Checked -FilePath msiexec.exe -ArgumentList $arguments
-              $daemonPath = Get-DaemonExecutable
+              $daemonPath = Get-DaemonExecutable -Phase "MSI upgrade"
               Invoke-Checked -FilePath msiexec.exe -ArgumentList @("/x", "`"$($installer.FullName)`"", "/qn", "/norestart")
           } else {
               $installer = Get-ChildItem artifact -Recurse -Filter *-setup.exe | Where-Object Name -NotLike "upgrade-baseline-*" | Select-Object -First 1
               $baseline = Get-ChildItem artifact -Recurse -Filter upgrade-baseline-*-setup.exe | Select-Object -First 1
               if ($null -eq $installer -or $null -eq $baseline) { throw "NSIS installers not found" }
               Invoke-Checked -FilePath $baseline.FullName -ArgumentList @("/S")
-              $daemonPath = Get-DaemonExecutable
+              $daemonPath = Get-DaemonExecutable -Phase "baseline NSIS install"
               Invoke-Checked -FilePath $installer.FullName -ArgumentList @("/S")
-              $daemonPath = Get-DaemonExecutable
+              $daemonPath = Get-DaemonExecutable -Phase "NSIS upgrade"
               $uninstaller = Get-ChildItem (Split-Path $daemonPath) -Filter *uninstall*.exe | Select-Object -First 1
               if ($null -eq $uninstaller) { throw "NSIS uninstaller not found" }
               Invoke-Checked -FilePath $uninstaller.FullName -ArgumentList @("/S")
