@@ -1,0 +1,43 @@
+[package]
+name = "octelium-desktop"
+version = "0.1.0"
+description = "The Octelium desktop application"
+authors = ["Octelium Labs, LLC"]
+license = "Apache-2.0"
+edition = "2021"
+rust-version = "1.89"
+
+[workspace]
+members = [".", "crates/grpc"]
+
+[lib]
+name = "octelium_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+octelium-grpc = { path = "crates/grpc" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+tokio = { version = "1", features = ["rt-multi-thread", "sync", "macros"] }
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri-plugin-autostart = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-os = "2"
+tauri-plugin-store = "2"
+tauri-plugin-window-state = "2"
+url = "2"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-single-instance = "2"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

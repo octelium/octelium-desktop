@@ -1,0 +1,24 @@
+{
+  "bundle": {
+    "linux": {
+      "deb": {
+        "depends": ["systemd"],
+        "files": {
+          "/usr/lib/systemd/system/octelium-desktop-daemon.service": "installer/linux/octelium-desktop-daemon.service"
+        },
+        "postInstallScript": "installer/linux/deb/postinst",
+        "preRemoveScript": "installer/linux/deb/prerm",
+        "postRemoveScript": "installer/linux/deb/postrm"
+      },
+      "rpm": {
+        "depends": ["systemd"],
+        "files": {
+          "/usr/lib/systemd/system/octelium-desktop-daemon.service": "installer/linux/octelium-desktop-daemon.service"
+        },
+        "postInstallScript": "installer/linux/rpm/postinstall",
+        "preRemoveScript": "installer/linux/rpm/preuninstall",
+        "postRemoveScript": "installer/linux/rpm/postuninstall"
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+
+if [ -d /run/systemd/system ]; then
+    systemctl daemon-reload
+    systemctl enable octelium-desktop-daemon.service
+    systemctl restart octelium-desktop-daemon.service
+fi

@@ -1,0 +1,14 @@
+{
+  "bundle": {
+    "windows": {
+      "nsis": {
+        "installMode": "perMachine",
+        "installerHooks": "installer/windows/hooks.nsh"
+      },
+      "wix": {
+        "fragmentPaths": ["installer/windows/daemon-service.wxs"],
+        "componentGroupRefs": ["OcteliumDesktopDaemonComponents"]
+      }
+    }
+  }
+}

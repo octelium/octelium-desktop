@@ -1,0 +1,215 @@
+name: Build desktop artifacts
+
+permissions: {}
+
+on:
+  workflow_dispatch:
+
+jobs:
+  resolve-cli:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      commit: ${{ steps.resolve.outputs.commit }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: octelium/octelium
+          ref: main
+          path: octelium-source
+          persist-credentials: false
+      - id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+          commit="$(git -C octelium-source rev-parse HEAD)"
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: resolve-cli
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            os: linux
+            arch: amd64
+            target: x86_64-unknown-linux-gnu
+            bundle_config: src-tauri/tauri.bundle.conf.json
+            bundles: deb,rpm,appimage
+            upgrade_bundles: deb,rpm
+            executable: octelium-desktop
+          - runner: ubuntu-24.04-arm
+            os: linux
+            arch: arm64
+            target: aarch64-unknown-linux-gnu
+            bundle_config: src-tauri/tauri.bundle.conf.json
+            bundles: deb,rpm,appimage
+            upgrade_bundles: deb,rpm
+            executable: octelium-desktop
+          - runner: macos-15-intel
+            os: darwin
+            arch: amd64
+            target: x86_64-apple-darwin
+            bundle_config: src-tauri/tauri.bundle.conf.json
+            bundles: app,dmg
+            upgrade_bundles: app
+            executable: octelium-desktop
+          - runner: macos-15
+            os: darwin
+            arch: arm64
+            target: aarch64-apple-darwin
+            bundle_config: src-tauri/tauri.bundle.conf.json
+            bundles: app,dmg
+            upgrade_bundles: app
+            executable: octelium-desktop
+          - runner: windows-latest
+            os: windows
+            arch: amd64
+            target: x86_64-pc-windows-msvc
+            bundle_config: src-tauri/tauri.windows.bundle.conf.json
+            bundles: nsis,msi
+            upgrade_bundles: nsis,msi
+            executable: octelium-desktop.exe
+          - runner: windows-11-arm
+            os: windows
+            arch: arm64
+            target: aarch64-pc-windows-msvc
+            bundle_config: src-tauri/tauri.windows.bundle.conf.json
+            bundles: nsis,msi
+            upgrade_bundles: nsis,msi
+            executable: octelium-desktop.exe
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: octelium/octelium
+          ref: ${{ needs.resolve-cli.outputs.commit }}
+          path: octelium-source
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: octelium-source/go.work
+          cache-dependency-path: octelium-source/client/octelium/go.sum
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: ${{ matrix.target }}
+      - name: Install Linux dependencies
+        if: matrix.os == 'linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libfuse2 patchelf rpm
+      - run: npm ci
+      - name: Build Octelium CLI from main
+        env:
+          OCTELIUM_COMMIT: ${{ needs.resolve-cli.outputs.commit }}
+          WIREGUARD_NT_SHA256: 772c0b1463d8d2212716f43f06f4594d880dea4f735165bd68e388fc41b81605
+          WINTUN_SHA256: 07c256185d6ee3652e09fa55c0b673e2624b565e02c4b9091c79ca7d2f24ef51
+        shell: bash
+        run: |
+          set -euo pipefail
+          sidecar="src-tauri/binaries/octelium-desktop-daemon-${{ matrix.target }}${{ matrix.os == 'windows' && '.exe' || '' }}"
+          mkdir -p src-tauri/binaries
+          ldflags_path="github.com/octelium/octelium/pkg/utils/ldflags"
+          ldflags="-X $ldflags_path.GitCommit=$OCTELIUM_COMMIT -X $ldflags_path.GitBranch=main -X $ldflags_path.ImageRegistry=ghcr.io -X $ldflags_path.ImageRegistryPrefix=octelium"
+          (
+            cd octelium-source
+            CGO_ENABLED=0 go build -ldflags "$ldflags" -o "../$sidecar" github.com/octelium/octelium/client/octelium
+          )
+          chmod +x "$sidecar"
+          if [[ "${{ matrix.os }}" == "windows" ]]; then
+            curl --fail --show-error --location --retry 3 --output wireguard.zip https://download.wireguard.com/wireguard-nt/wireguard-nt-0.10.1.zip
+            echo "$WIREGUARD_NT_SHA256  wireguard.zip" | sha256sum --check --strict
+            unzip -q wireguard.zip
+            cp "wireguard-nt/bin/${{ matrix.arch }}/wireguard.dll" src-tauri/binaries/
+            curl --fail --show-error --location --retry 3 --output wintun.zip https://www.wintun.net/builds/wintun-0.14.1.zip
+            echo "$WINTUN_SHA256  wintun.zip" | sha256sum --check --strict
+            unzip -q wintun.zip
+            cp "wintun/bin/${{ matrix.arch }}/wintun.dll" src-tauri/binaries/
+          fi
+          printf '%s\n' "$OCTELIUM_COMMIT" > "src-tauri/binaries/octelium-desktop-daemon-${{ matrix.target }}.version"
+      - name: Build upgrade baseline
+        shell: bash
+        run: npm run tauri build -- --target "${{ matrix.target }}" --bundles "${{ matrix.upgrade_bundles }}" --config "${{ matrix.bundle_config }}" --config src-tauri/tauri.unsigned.conf.json --config '{"version":"0.0.1"}' --ignore-version-mismatches
+      - name: Build macOS upgrade baseline
+        if: matrix.os == 'darwin'
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="src-tauri/target/${{ matrix.target }}/release"
+          src-tauri/installer/macos/build-pkg.sh \
+            "$target/bundle/macos/Octelium Desktop.app" \
+            "0.0.1" \
+            "${{ matrix.arch }}" \
+            "$target/bundle/pkg/Octelium_0.0.1_${{ matrix.arch }}.pkg"
+      - name: Collect upgrade baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="src-tauri/target/${{ matrix.target }}/release"
+          baseline="upgrade-baseline"
+          mkdir "$baseline"
+          while IFS= read -r -d '' file; do
+            cp "$file" "$baseline/upgrade-baseline-$(basename "$file")"
+          done < <(find "$target/bundle" -type f \( -name '*.deb' -o -name '*.rpm' -o -name '*.msi' -o -name '*.pkg' -o -name '*-setup.exe' \) -print0)
+          rm -rf "$target/bundle"
+      - name: Build application
+        shell: bash
+        run: npm run tauri build -- --target "${{ matrix.target }}" --bundles "${{ matrix.bundles }}" --config "${{ matrix.bundle_config }}" --config src-tauri/tauri.unsigned.conf.json
+      - name: Build macOS installer package
+        if: matrix.os == 'darwin'
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(node -p 'require("./package.json").version')"
+          target="src-tauri/target/${{ matrix.target }}/release"
+          src-tauri/installer/macos/build-pkg.sh \
+            "$target/bundle/macos/Octelium Desktop.app" \
+            "$version" \
+            "${{ matrix.arch }}" \
+            "$target/bundle/pkg/Octelium_${version}_${{ matrix.arch }}.pkg"
+      - name: Collect artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="release-output"
+          target="src-tauri/target/${{ matrix.target }}/release"
+          mkdir "$output"
+          cp upgrade-baseline/* "$output/"
+          cp "$target/${{ matrix.executable }}" "$output/octelium-desktop-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }}"
+          while IFS= read -r -d '' file; do
+            cp "$file" "$output/octelium-desktop-${{ matrix.os }}-${{ matrix.arch }}-$(basename "$file")"
+          done < <(find "$target/bundle" -type f \( -name '*.deb' -o -name '*.rpm' -o -name '*.AppImage' -o -name '*.dmg' -o -name '*.msi' -o -name '*.pkg' -o -name '*-setup.exe' \) -print0)
+          cp "src-tauri/binaries/octelium-desktop-daemon-${{ matrix.target }}${{ matrix.os == 'windows' && '.exe' || '' }}" "$output/octelium-cli-main-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }}"
+          cp "src-tauri/binaries/octelium-desktop-daemon-${{ matrix.target }}.version" "$output/OCTELIUM_CLI_COMMIT"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: octelium-desktop-${{ matrix.os }}-${{ matrix.arch }}
+          path: release-output/*
+          if-no-files-found: error
+          retention-days: 14
+
+  test-installers:
+    needs: build
+    permissions:
+      actions: read
+      contents: read
+    uses: ./.github/workflows/installer-test.yaml
+    with:
+      artifact_prefix: octelium-desktop

@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme static {
+  --color-app: var(--oct-app);
+  --color-surface: var(--oct-surface);
+  --color-surface-2: var(--oct-surface-2);
+  --color-surface-3: var(--oct-surface-3);
+  --color-line: var(--oct-line);
+  --color-line-strong: var(--oct-line-strong);
+  --color-strong: var(--oct-strong);
+  --color-body: var(--oct-body);
+  --color-muted: var(--oct-muted);
+  --color-faint: var(--oct-faint);
+  --color-inverse: var(--oct-inverse);
+  --color-inverse-fg: var(--oct-inverse-fg);
+  --color-inverse-hover: var(--oct-inverse-hover);
+}
+
+:root {
+  --oct-app: #f6f8fb;
+  --oct-surface: #ffffff;
+  --oct-surface-2: #f8fafc;
+  --oct-surface-3: #eef2f7;
+  --oct-line: #e2e8f0;
+  --oct-line-strong: #cbd5e1;
+  --oct-strong: #0f172a;
+  --oct-body: #334155;
+  --oct-muted: #64748b;
+  --oct-faint: #94a3b8;
+  --oct-inverse: #18181b;
+  --oct-inverse-fg: #ffffff;
+  --oct-inverse-hover: #27272a;
+
+  color-scheme: light;
+  color: var(--oct-strong);
+  background: var(--oct-app);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+[data-theme="dark"] {
+  --oct-app: #0b1120;
+  --oct-surface: #121b2d;
+  --oct-surface-2: #0f1728;
+  --oct-surface-3: #1b2940;
+  --oct-line: #253550;
+  --oct-line-strong: #3a4d6b;
+  --oct-strong: #f8fafc;
+  --oct-body: #cbd5e1;
+  --oct-muted: #94a3b8;
+  --oct-faint: #64748b;
+  --oct-inverse: #f1f5f9;
+  --oct-inverse-fg: #0f172a;
+  --oct-inverse-hover: #cbd5e1;
+
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  min-width: 320px;
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Ubuntu", sans-serif;
+  overflow-x: hidden;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--oct-line-strong);
+  border: 3px solid transparent;
+  border-radius: 8px;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

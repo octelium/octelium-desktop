@@ -1,0 +1,10 @@
+{
+  "bundle": {
+    "externalBin": ["binaries/octelium-desktop-daemon"],
+    "resources": {
+      "binaries/wireguard.dll": "wireguard.dll",
+      "binaries/wintun.dll": "wintun.dll",
+      "installer/windows/install-daemon.ps1": "install-daemon.ps1"
+    }
+  }
+}

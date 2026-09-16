@@ -1,0 +1,13 @@
+[Unit]
+Description=Octelium Desktop daemon
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/octelium-desktop-daemon daemon
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
