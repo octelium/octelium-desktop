@@ -96,7 +96,7 @@ src-tauri/crates/grpc          the gRPC bridge, testable without Tauri
 
 ```bash
 sudo apt-get install libwebkit2gtk-4.1-dev libgtk-3-dev \
-    libayatana-appindicator3-dev librsvg2-dev
+    libayatana-appindicator3-dev librsvg2-dev libfuse2 patchelf rpm xdg-utils
 ```
 
 * A running Octelium daemon. The native Octelium Desktop installers install it as a

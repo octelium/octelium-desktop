@@ -2,7 +2,7 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Fragment>
     <DirectoryRef Id="INSTALLDIR">
-      <Component Id="OcteliumDesktopDaemonMarker" Guid="*" Win64="$(var.Win64)">
+      <Component Id="OcteliumDesktopDaemonMarker" Guid="*" Win64="yes">
         <RegistryValue Root="HKLM" Key="Software\Octelium\Octelium Desktop" Name="DaemonService" Type="integer" Value="1" KeyPath="yes" />
       </Component>
     </DirectoryRef>
