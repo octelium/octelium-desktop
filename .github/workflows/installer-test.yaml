@@ -44,6 +44,19 @@ jobs:
           package="$(find artifact -type f -name '*.${{ matrix.package }}' ! -name 'upgrade-baseline-*' -print -quit)"
           baseline="$(find artifact -type f -name 'upgrade-baseline-*.${{ matrix.package }}' -print -quit)"
           [[ -n "$package" && -n "$baseline" ]]
+          require_active_service() {
+            for attempt in {1..30}; do
+              if sudo systemctl is-active --quiet octelium-desktop-daemon.service; then
+                return 0
+              fi
+              sleep 1
+            done
+            sudo systemctl status --no-pager --full octelium-desktop-daemon.service || true
+            sudo journalctl --no-pager -n 100 -u octelium-desktop-daemon.service || true
+            return 1
+          }
+          package="$(realpath "$package")"
+          baseline="$(realpath "$baseline")"
           if [[ "${{ matrix.package }}" == "deb" ]]; then
             sudo apt-get update
             sudo apt-get install -y "$baseline"
@@ -55,7 +68,7 @@ jobs:
             package_name="$(rpm -qp --queryformat '%{NAME}' "$package")"
           fi
           sudo systemctl is-enabled --quiet octelium-desktop-daemon.service
-          sudo systemctl is-active --quiet octelium-desktop-daemon.service
+          require_active_service
           test -x /usr/bin/octelium-desktop-daemon
           test -f /usr/lib/systemd/system/octelium-desktop-daemon.service
           if [[ "${{ matrix.package }}" == "deb" ]]; then
@@ -63,7 +76,7 @@ jobs:
           else
             sudo rpm -U --nodeps "$package"
           fi
-          sudo systemctl is-active --quiet octelium-desktop-daemon.service
+          require_active_service
           if [[ "${{ matrix.package }}" == "deb" ]]; then
             sudo dpkg -P "$package_name"
           else
@@ -157,8 +170,17 @@ jobs:
           }
 
           function Get-DaemonExecutable {
-              $service = Get-CimInstance Win32_Service -Filter "Name='OcteliumDesktopDaemon'"
+              $service = $null
+              for ($attempt = 0; $attempt -lt 30; $attempt++) {
+                  $service = Get-CimInstance Win32_Service -Filter "Name='OcteliumDaemon'" -ErrorAction SilentlyContinue
+                  if ($null -ne $service -and $service.State -eq "Running" -and $service.StartMode -eq "Auto") {
+                      break
+                  }
+                  Start-Sleep -Seconds 1
+              }
               if ($null -eq $service -or $service.State -ne "Running" -or $service.StartMode -ne "Auto") {
+                  & sc.exe queryex OcteliumDaemon
+                  Get-WinEvent -FilterHashtable @{ LogName = "System"; ProviderName = "Service Control Manager" } -MaxEvents 20 -ErrorAction SilentlyContinue | Format-List | Out-String | Write-Host
                   throw "The Octelium Desktop daemon service is not running automatically"
               }
 
@@ -194,12 +216,12 @@ jobs:
           }
 
           for ($attempt = 0; $attempt -lt 30; $attempt++) {
-              if ($null -eq (Get-Service OcteliumDesktopDaemon -ErrorAction SilentlyContinue)) {
+              if ($null -eq (Get-Service OcteliumDaemon -ErrorAction SilentlyContinue)) {
                   break
               }
               Start-Sleep -Seconds 1
           }
-          if ($null -ne (Get-Service OcteliumDesktopDaemon -ErrorAction SilentlyContinue)) {
+          if ($null -ne (Get-Service OcteliumDaemon -ErrorAction SilentlyContinue)) {
               throw "The Octelium Desktop daemon service still exists after uninstall"
           }
           if (Test-Path -LiteralPath $daemonPath) {

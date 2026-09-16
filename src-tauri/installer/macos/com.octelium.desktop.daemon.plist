@@ -4,6 +4,11 @@
 <dict>
     <key>Label</key>
     <string>com.octelium.desktop.daemon</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>OCTELIUM_HOME</key>
+        <string>/Library/Application Support/Octelium Desktop/daemon-state</string>
+    </dict>
     <key>ProgramArguments</key>
     <array>
         <string>/Applications/Octelium Desktop.app/Contents/MacOS/octelium-desktop-daemon</string>

@@ -5,7 +5,9 @@ After=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/octelium-desktop-daemon daemon
+StateDirectory=octelium-desktop
+StateDirectoryMode=0700
+ExecStart=/usr/bin/octelium-desktop-daemon --homedir /var/lib/octelium-desktop daemon
 Restart=on-failure
 RestartSec=5s
 

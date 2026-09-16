@@ -3,7 +3,7 @@ import { Alert, Code } from "@mantine/core";
 import { ShieldAlert } from "lucide-react";
 
 const COMMANDS: Record<string, string> = {
-  windows: "Start-Service OcteliumDesktopDaemon",
+  windows: "Start-Service OcteliumDaemon",
   linux: "sudo systemctl start octelium-desktop-daemon.service",
   macos: "sudo launchctl kickstart -k system/com.octelium.desktop.daemon",
 };

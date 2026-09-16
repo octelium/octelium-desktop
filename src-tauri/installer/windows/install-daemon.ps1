@@ -7,7 +7,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$ServiceName = "OcteliumDesktopDaemon"
+$ServiceName = "OcteliumDaemon"
 $Service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
 
 if ($null -ne $Service -and $Service.Status -ne "Stopped") {
@@ -34,7 +34,9 @@ if (-not (Test-Path -LiteralPath $ExecutablePath -PathType Leaf)) {
     throw "The Octelium Desktop daemon executable does not exist"
 }
 
-$BinaryPath = '"' + $ExecutablePath + '" daemon'
+$StatePath = Join-Path ([Environment]::GetFolderPath("CommonApplicationData")) "Octelium Desktop\daemon-state"
+New-Item -ItemType Directory -Path $StatePath -Force | Out-Null
+$BinaryPath = '"' + $ExecutablePath + '" --homedir "' + $StatePath + '" daemon'
 if ($null -eq $Service) {
     New-Service -Name $ServiceName -BinaryPathName $BinaryPath -DisplayName "Octelium Desktop Daemon" -Description "Runs the privileged daemon used by Octelium Desktop" -StartupType Automatic | Out-Null
 } else {
