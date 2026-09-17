@@ -1,8 +1,8 @@
 import DaemonUnavailable from "@/components/DaemonUnavailable";
 import Footer from "@/components/Footer";
+import OperationBanner from "@/components/OperationBanner";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
-import OperationBanner from "@/components/OperationBanner";
 import {
   useDaemonWatch,
   useDomainState,
@@ -10,10 +10,10 @@ import {
   useSessionCacheLifecycle,
 } from "@/features/daemon/hooks";
 import { getActiveOperation } from "@/utils/daemon";
+import { useAppSelector } from "@/utils/hooks";
 import { useNativeIntegration } from "@/utils/hooks/native";
 import { AppShell, Burger } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { useAppSelector } from "@/utils/hooks";
 import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 
@@ -25,6 +25,9 @@ const Root = () => {
     (state) => state.daemon.selectedDomain,
   );
   const domainState = useDomainState(selectedDomain);
+  const daemonIndependent =
+    location.pathname === "/settings" || location.pathname === "/diagnostics";
+  const showContent = availability === "available" || daemonIndependent;
 
   useDaemonWatch();
   useSelectedDomain();
@@ -67,12 +70,17 @@ const Root = () => {
           </AppShell.Navbar>
 
           <AppShell.Main className="min-h-screen !bg-transparent">
-            {availability === "available" ? (
+            {showContent ? (
               <div className="mx-auto flex min-h-[calc(100vh-60px)] w-full max-w-6xl flex-col">
                 <div className="min-w-0 flex-1">
-                  <OperationBanner
-                    operation={getActiveOperation(domainState)}
-                  />
+                  {availability !== "available" && (
+                    <DaemonUnavailable compact platform={platform} />
+                  )}
+                  {availability === "available" && (
+                    <OperationBanner
+                      operation={getActiveOperation(domainState)}
+                    />
+                  )}
                   <Outlet />
                 </div>
                 <Footer />

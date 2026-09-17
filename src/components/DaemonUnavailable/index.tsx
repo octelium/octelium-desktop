@@ -8,11 +8,36 @@ const COMMANDS: Record<string, string> = {
   macos: "sudo launchctl kickstart -k system/com.octelium.desktop.daemon",
 };
 
-const DaemonUnavailable = (props: { platform?: string }) => {
+const DaemonUnavailable = (props: { platform?: string; compact?: boolean }) => {
   const availability = useAppSelector((state) => state.daemon.availability);
   const error = useAppSelector((state) => state.daemon.error);
-
   const command = COMMANDS[props.platform ?? ""];
+  const title =
+    availability === "unknown"
+      ? "Checking the Octelium daemon"
+      : availability === "incompatible"
+        ? "The Octelium daemon is incompatible"
+        : "The Octelium daemon is not running";
+  const description =
+    availability === "unknown"
+      ? "The application is waiting for the local daemon to respond."
+      : availability === "incompatible"
+        ? "Update both the Octelium desktop application and the Octelium daemon to the same release."
+        : "Start the privileged Octelium daemon and this application reconnects on its own.";
+
+  if (props.compact) {
+    return (
+      <Alert
+        color={availability === "unknown" ? "gray" : "red"}
+        radius="md"
+        className="mb-5"
+        icon={<ShieldAlert size={18} aria-hidden />}
+        title={title}
+      >
+        {description}
+      </Alert>
+    );
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-64px)] w-full items-center justify-center p-6">
@@ -22,18 +47,12 @@ const DaemonUnavailable = (props: { platform?: string }) => {
         </div>
 
         <h1 className="text-xl font-extrabold tracking-tight text-strong">
-          {availability === "incompatible"
-            ? "The Octelium daemon is incompatible"
-            : "The Octelium daemon is not running"}
+          {title}
         </h1>
 
-        <p className="mt-2 text-sm font-medium text-muted">
-          {availability === "incompatible"
-            ? "Update both the Octelium desktop application and the Octelium daemon to the same release."
-            : "Start the privileged Octelium daemon and this application reconnects on its own."}
-        </p>
+        <p className="mt-2 text-sm font-medium text-muted">{description}</p>
 
-        {availability !== "incompatible" && command && (
+        {availability === "unavailable" && command && (
           <div className="mt-5">
             <div className="mb-1 text-[11px] font-bold tracking-wide text-faint uppercase">
               Start manually

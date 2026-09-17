@@ -1,3 +1,4 @@
+import ConfirmModal from "@/components/ConfirmModal";
 import { getErrorMessage, updateDomainSettings } from "@/features/daemon/actions";
 import { useDomainState } from "@/features/daemon/hooks";
 import {
@@ -27,7 +28,8 @@ import {
 } from "@mantine/core";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ChevronDown, Info, Save, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { useBeforeUnload, useBlocker } from "react-router-dom";
 import { twMerge } from "tailwind-merge";
 import type { Service } from "@octelium/apis/main/userv1";
 
@@ -379,10 +381,28 @@ const DomainSettingsEditor = (props: {
 
   const formError = getSettingsError(settings);
   const dirty = !DomainSettings.equals(settings, baseline);
+  const blocker = useBlocker(dirty);
+
+  useBeforeUnload(
+    useCallback(
+      (event) => {
+        if (dirty) {
+          event.preventDefault();
+          event.returnValue = "";
+        }
+      },
+      [dirty],
+    ),
+  );
+
+  const reset = () => {
+    setSettings(getFormSettings(domain, baseline));
+    mutation.reset();
+  };
 
   return (
-    <div className="rounded-xl border border-line bg-surface p-6 shadow-xs">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div className="relative pb-1">
+      <div className="rounded-xl border border-line bg-surface p-6 shadow-xs">
         <div>
           <h2 className="text-sm font-extrabold tracking-tight text-strong">
             {domain}
@@ -393,267 +413,306 @@ const DomainSettingsEditor = (props: {
           </p>
         </div>
 
-        <Button
-          className="flex-none"
-          loading={mutation.isPending}
-          disabled={!dirty || !!formError}
-          leftSection={<Save size={15} aria-hidden />}
-          onClick={() => mutation.mutate()}
-        >
-          Save
-        </Button>
-      </div>
+        {isConnected(state) && (
+          <Notice
+            className="mt-4"
+            title="Already connected"
+            icon={<Info size={16} aria-hidden />}
+          >
+            Saving does not reconfigure the active Connection. Reconnect in order to
+            apply the new settings.
+          </Notice>
+        )}
 
-      {isConnected(state) && (
-        <Notice
-          className="mt-4"
-          title="Already connected"
-          icon={<Info size={16} aria-hidden />}
-        >
-          Saving does not reconfigure the active Connection. Reconnect in order to
-          apply the new settings.
-        </Notice>
-      )}
+        {mutation.isError && (
+          <Alert color="red" radius="md" className="mt-4" title="Could not save">
+            {getErrorMessage(mutation.error)}
+          </Alert>
+        )}
 
-      {mutation.isError && (
-        <Alert color="red" radius="md" className="mt-4" title="Could not save">
-          {getErrorMessage(mutation.error)}
-        </Alert>
-      )}
+        {formError && (
+          <Alert color="orange" radius="md" className="mt-4" title="Check the settings">
+            {formError}
+          </Alert>
+        )}
 
-      {formError && (
-        <Alert color="orange" radius="md" className="mt-4" title="Check the settings">
-          {formError}
-        </Alert>
-      )}
+        {mutation.isSuccess && (
+          <Alert color="green" radius="md" className="mt-4" title="Saved">
+            The settings of the Cluster were stored by the daemon.
+          </Alert>
+        )}
 
-      {mutation.isSuccess && (
-        <Alert color="green" radius="md" className="mt-4" title="Saved">
-          The settings of the Cluster were stored by the daemon.
-        </Alert>
-      )}
-
-      <div className="mt-3">
-        <Row
-          title="Auto connect"
-          description="The daemon connects this Cluster on its own whenever usable credentials are available."
-        >
-          <Switch
-            aria-label="Auto connect"
-            checked={settings.autoConnect}
-            onChange={(event) => {
-              mutation.reset();
-              setSettings({
-                ...settings,
-                autoConnect: event.currentTarget.checked,
-              });
-            }}
-          />
-        </Row>
-
-        <Row title="Tunnel mode">
-          <Select
-            aria-label="Tunnel mode"
-            className="w-[170px]"
-            data={TUNNEL_MODES}
-            allowDeselect={false}
-            value={String(options.tunnelMode)}
-            onChange={(value) => setOptions({ tunnelMode: Number(value) })}
-          />
-        </Row>
-
-        <Row title="DNS">
-          <Select
-            aria-label="DNS mode"
-            className="w-[170px]"
-            data={DNS_MODES}
-            allowDeselect={false}
-            value={String(dns.mode || ConnectionOptions_DNS_Mode.DEFAULT)}
-            onChange={(value) =>
-              setOptions({ dns: { ...dns, mode: Number(value) } })
-            }
-          />
-        </Row>
-      </div>
-
-      <button
-        type="button"
-        className="mt-4 flex cursor-pointer items-center gap-2 text-sm font-bold text-muted transition-colors hover:text-strong"
-        aria-expanded={advanced}
-        onClick={() => setAdvanced((value) => !value)}
-      >
-        <ChevronDown
-          size={16}
-          aria-hidden
-          className={twMerge("transition-transform duration-300", advanced && "rotate-180")}
-        />
-        Advanced
-      </button>
-
-      <Collapse expanded={advanced}>
-        <div className="mt-2">
-          <Row title="Layer 3 mode">
-            <Select
-              aria-label="Layer 3 mode"
-              className="w-[170px]"
-              data={L3_MODES}
-              allowDeselect={false}
-              value={String(options.l3Mode)}
-              onChange={(value) => setOptions({ l3Mode: Number(value) })}
-            />
-          </Row>
-
-          <Row title="Implementation mode">
-            <Select
-              aria-label="Implementation mode"
-              className="w-[170px]"
-              data={IMPLEMENTATION_MODES}
-              allowDeselect={false}
-              value={String(options.implementationMode)}
-              onChange={(value) =>
-                setOptions({ implementationMode: Number(value) })
-              }
-            />
-          </Row>
-
-          <Row title="MTU" description="Leave it empty in order to let the daemon choose.">
-            <NumberInput
-              aria-label="MTU"
-              className="w-[140px]"
-              min={576}
-              max={1500}
-              value={options.mtu || ""}
-              onChange={(value) => setOptions({ mtu: Number(value) || 0 })}
-            />
-          </Row>
-
+        <div className="mt-3">
           <Row
-            title="Local DNS server"
-            description="Run the Octelium local DNS server on this machine."
+            title="Auto connect"
+            description="The daemon connects this Cluster on its own whenever usable credentials are available."
           >
             <Switch
-              aria-label="Local DNS server"
-              checked={dns.enableLocalServer}
-              onChange={(event) =>
-                setOptions({
-                  dns: { ...dns, enableLocalServer: event.currentTarget.checked },
-                })
-              }
+              aria-label="Auto connect"
+              checked={settings.autoConnect}
+              onChange={(event) => {
+                mutation.reset();
+                setSettings({
+                  ...settings,
+                  autoConnect: event.currentTarget.checked,
+                });
+              }}
             />
           </Row>
 
-          {dns.enableLocalServer && (
-            <Row title="Local DNS listen address">
-              <TextInput
-                aria-label="Local DNS listen address"
-                className="w-[220px]"
-                placeholder="127.0.0.1:53"
-                value={dns.localServerListenAddress}
+          <Row title="Tunnel mode">
+            <Select
+              aria-label="Tunnel mode"
+              className="w-[170px]"
+              data={TUNNEL_MODES}
+              allowDeselect={false}
+              value={String(options.tunnelMode)}
+              onChange={(value) => setOptions({ tunnelMode: Number(value) })}
+            />
+          </Row>
+
+          <Row title="DNS">
+            <Select
+              aria-label="DNS mode"
+              className="w-[170px]"
+              data={DNS_MODES}
+              allowDeselect={false}
+              value={String(dns.mode || ConnectionOptions_DNS_Mode.DEFAULT)}
+              onChange={(value) =>
+                setOptions({ dns: { ...dns, mode: Number(value) } })
+              }
+            />
+          </Row>
+        </div>
+
+        <button
+          type="button"
+          className="mt-4 flex cursor-pointer items-center gap-2 text-sm font-bold text-muted transition-colors hover:text-strong"
+          aria-expanded={advanced}
+          onClick={() => setAdvanced((value) => !value)}
+        >
+          <ChevronDown
+            size={16}
+            aria-hidden
+            className={twMerge("transition-transform duration-300", advanced && "rotate-180")}
+          />
+          Advanced
+        </button>
+
+        <Collapse expanded={advanced}>
+          <div className="mt-2">
+            <Row title="Layer 3 mode">
+              <Select
+                aria-label="Layer 3 mode"
+                className="w-[170px]"
+                data={L3_MODES}
+                allowDeselect={false}
+                value={String(options.l3Mode)}
+                onChange={(value) => setOptions({ l3Mode: Number(value) })}
+              />
+            </Row>
+
+            <Row title="Implementation mode">
+              <Select
+                aria-label="Implementation mode"
+                className="w-[170px]"
+                data={IMPLEMENTATION_MODES}
+                allowDeselect={false}
+                value={String(options.implementationMode)}
+                onChange={(value) =>
+                  setOptions({ implementationMode: Number(value) })
+                }
+              />
+            </Row>
+
+            <Row title="MTU" description="Leave it empty in order to let the daemon choose.">
+              <NumberInput
+                aria-label="MTU"
+                className="w-[140px]"
+                min={576}
+                max={1500}
+                value={options.mtu || ""}
+                onChange={(value) => setOptions({ mtu: Number(value) || 0 })}
+              />
+            </Row>
+
+            <Row
+              title="Local DNS server"
+              description="Run the Octelium local DNS server on this machine."
+            >
+              <Switch
+                aria-label="Local DNS server"
+                checked={dns.enableLocalServer}
                 onChange={(event) =>
                   setOptions({
-                    dns: {
-                      ...dns,
-                      localServerListenAddress: event.currentTarget.value,
+                    dns: { ...dns, enableLocalServer: event.currentTarget.checked },
+                  })
+                }
+              />
+            </Row>
+
+            {dns.enableLocalServer && (
+              <Row title="Local DNS listen address">
+                <TextInput
+                  aria-label="Local DNS listen address"
+                  className="w-[220px]"
+                  placeholder="127.0.0.1:53"
+                  value={dns.localServerListenAddress}
+                  onChange={(event) =>
+                    setOptions({
+                      dns: {
+                        ...dns,
+                        localServerListenAddress: event.currentTarget.value,
+                      },
+                    })
+                  }
+                />
+              </Row>
+            )}
+
+            <Row
+              title="Host every Service"
+              description="Host every Service that your User is authorized to host."
+            >
+              <Switch
+                aria-label="Host every Service"
+                checked={serviceOptions.serveAll}
+                onChange={(event) =>
+                  setOptions({
+                    serviceOptions: {
+                      ...serviceOptions,
+                      serveAll: event.currentTarget.checked,
+                      serve: event.currentTarget.checked
+                        ? []
+                        : serviceOptions.serve,
                     },
                   })
                 }
               />
             </Row>
-          )}
 
-          <Row
-            title="Host every Service"
-            description="Host every Service that your User is authorized to host."
-          >
-            <Switch
-              aria-label="Host every Service"
-              checked={serviceOptions.serveAll}
-              onChange={(event) =>
-                setOptions({
-                  serviceOptions: {
-                    ...serviceOptions,
-                    serveAll: event.currentTarget.checked,
-                    serve: event.currentTarget.checked
-                      ? []
-                      : serviceOptions.serve,
-                  },
-                })
-              }
-            />
-          </Row>
+            {!serviceOptions.serveAll && (
+              <div className="border-b border-line py-4">
+                <ServedServices
+                  domain={domain}
+                  enabled={isAuthenticated(state)}
+                  items={serviceOptions.serve}
+                  onChange={(items) =>
+                    setOptions({
+                      serviceOptions: { ...serviceOptions, serve: items },
+                    })
+                  }
+                />
+              </div>
+            )}
 
-          {!serviceOptions.serveAll && (
-            <div className="border-b border-line py-4">
-              <ServedServices
+            <Row
+              title="Embedded SSH server"
+              description="Serve the embedded SSH server of the Connection."
+            >
+              <Switch
+                aria-label="Embedded SSH server"
+                checked={serviceOptions.enableEmbeddedSSH}
+                onChange={(event) =>
+                  setOptions({
+                    serviceOptions: {
+                      ...serviceOptions,
+                      enableEmbeddedSSH: event.currentTarget.checked,
+                    },
+                  })
+                }
+              />
+            </Row>
+
+            <Row
+              title="Embedded SOCKS5 server"
+              description="Serve the embedded SOCKS5 server of the Connection."
+            >
+              <Switch
+                aria-label="Embedded SOCKS5 server"
+                checked={serviceOptions.enableEmbeddedSOCKS5}
+                onChange={(event) =>
+                  setOptions({
+                    serviceOptions: {
+                      ...serviceOptions,
+                      enableEmbeddedSOCKS5: event.currentTarget.checked,
+                    },
+                  })
+                }
+              />
+            </Row>
+
+            <div className="border-b border-line py-4 last:border-b-0">
+              <div className="mb-3 text-sm font-bold text-strong">
+                Published Services
+              </div>
+              <div className="mb-4 text-sm font-medium text-muted">
+                Map Cluster Services to listeners on this machine. Privileged ports
+                are refused for unprivileged users by the daemon.
+              </div>
+              <PublishedServices
                 domain={domain}
                 enabled={isAuthenticated(state)}
-                items={serviceOptions.serve}
+                items={serviceOptions.publish}
                 onChange={(items) =>
                   setOptions({
-                    serviceOptions: { ...serviceOptions, serve: items },
+                    serviceOptions: { ...serviceOptions, publish: items },
                   })
                 }
               />
             </div>
-          )}
+          </div>
+        </Collapse>
+      </div>
 
-          <Row
-            title="Embedded SSH server"
-            description="Serve the embedded SSH server of the Connection."
-          >
-            <Switch
-              aria-label="Embedded SSH server"
-              checked={serviceOptions.enableEmbeddedSSH}
-              onChange={(event) =>
-                setOptions({
-                  serviceOptions: {
-                    ...serviceOptions,
-                    enableEmbeddedSSH: event.currentTarget.checked,
-                  },
-                })
-              }
-            />
-          </Row>
-
-          <Row
-            title="Embedded SOCKS5 server"
-            description="Serve the embedded SOCKS5 server of the Connection."
-          >
-            <Switch
-              aria-label="Embedded SOCKS5 server"
-              checked={serviceOptions.enableEmbeddedSOCKS5}
-              onChange={(event) =>
-                setOptions({
-                  serviceOptions: {
-                    ...serviceOptions,
-                    enableEmbeddedSOCKS5: event.currentTarget.checked,
-                  },
-                })
-              }
-            />
-          </Row>
-
-          <div className="border-b border-line py-4 last:border-b-0">
-            <div className="mb-3 text-sm font-bold text-strong">
-              Published Services
+      {dirty && (
+        <div className="sticky bottom-4 z-20 mt-4 flex flex-col gap-3 rounded-xl border border-line-strong bg-surface/95 p-3 shadow-2xl shadow-slate-900/15 backdrop-blur sm:flex-row sm:items-center sm:justify-between dark:shadow-black/40">
+          <div className="min-w-0">
+            <div className="text-sm font-bold text-strong">
+              Unsaved changes
             </div>
-            <div className="mb-4 text-sm font-medium text-muted">
-              Map Cluster Services to listeners on this machine. Privileged ports
-              are refused for unprivileged users by the daemon.
+            <div className="text-xs font-medium text-muted">
+              Save or cancel before leaving these Cluster settings.
             </div>
-            <PublishedServices
-              domain={domain}
-              enabled={isAuthenticated(state)}
-              items={serviceOptions.publish}
-              onChange={(items) =>
-                setOptions({
-                  serviceOptions: { ...serviceOptions, publish: items },
-                })
-              }
-            />
+          </div>
+          <div className="flex flex-none items-center justify-end gap-2">
+            <Button
+              variant="outline"
+              disabled={mutation.isPending}
+              onClick={reset}
+            >
+              Cancel
+            </Button>
+            <Button
+              loading={mutation.isPending}
+              disabled={!!formError}
+              leftSection={<Save size={15} aria-hidden />}
+              onClick={() => mutation.mutate()}
+            >
+              Save changes
+            </Button>
           </div>
         </div>
-      </Collapse>
+      )}
+
+      <ConfirmModal
+        opened={blocker.state === "blocked"}
+        onClose={() => {
+          if (blocker.state === "blocked") {
+            blocker.reset();
+          }
+        }}
+        onConfirm={() => {
+          if (blocker.state === "blocked") {
+            blocker.proceed();
+          }
+        }}
+        title="Discard unsaved changes?"
+        confirmLabel="Discard changes"
+        color="red"
+      >
+        Your unsaved Cluster settings will be lost if you leave this page.
+      </ConfirmModal>
     </div>
   );
 };

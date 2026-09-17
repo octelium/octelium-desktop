@@ -179,6 +179,8 @@ jobs:
           rm -rf "$target/bundle"
       - name: Build application
         shell: bash
+        env:
+          VITE_APP_VERSION: ${{ github.ref_name }}
         run: npm run tauri build -- --target "${{ matrix.target }}" --bundles "${{ matrix.bundles }}" --config "${{ matrix.bundle_config }}" --config src-tauri/tauri.unsigned.conf.json
       - name: Build macOS installer package
         if: matrix.os == 'darwin'

@@ -9,6 +9,7 @@ import {
 } from "@/utils/daemon";
 import { useAppSelector } from "@/utils/hooks";
 import { getAppInfo, isNative, type AppInfo } from "@/utils/native";
+import { currentAppVersion } from "@/utils/version";
 import { useEffect, useState } from "react";
 
 const Mono = (props: { children?: React.ReactNode }) => (
@@ -73,7 +74,7 @@ const Diagnostics = () => {
             Application
           </h2>
           <dl className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            <InfoItem title="Version">{appInfo?.version ?? "—"}</InfoItem>
+            <InfoItem title="Version">{currentAppVersion ?? "Development build"}</InfoItem>
             <InfoItem title="Platform">{appInfo?.platform ?? "—"}</InfoItem>
             <InfoItem title="Architecture">{appInfo?.arch ?? "—"}</InfoItem>
           </dl>

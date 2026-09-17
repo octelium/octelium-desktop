@@ -2,7 +2,9 @@ import { setPrefs } from "@/features/prefs/slice";
 import { useAppDispatch, useAppSelector } from "@/utils/hooks";
 import { isNative } from "@/utils/native";
 import type { Prefs, ThemeMode } from "@/utils/prefs";
+import { currentAppVersion, getLatestAppVersion } from "@/utils/version";
 import { Alert, Select, Switch } from "@mantine/core";
+import { useQuery } from "@tanstack/react-query";
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import {
   isPermissionGranted,
@@ -39,6 +41,12 @@ const AppSettings = () => {
   const prefs = useAppSelector((state) => state.prefs.prefs);
   const prefsError = useAppSelector((state) => state.prefs.error);
   const [error, setError] = useState<string | undefined>(undefined);
+  const latestVersionQuery = useQuery({
+    queryKey: ["github", "octelium-desktop", "latest-release"],
+    queryFn: getLatestAppVersion,
+    staleTime: 6 * 60 * 60 * 1000,
+    retry: false,
+  });
 
   const set = (arg: Partial<Prefs>) => {
     dispatch(setPrefs({ prefs: { ...prefs, ...arg } }));
@@ -116,6 +124,30 @@ const AppSettings = () => {
       )}
 
       <div className="mt-3">
+        <Row
+          title="Current version"
+          description={
+            currentAppVersion
+              ? "The version installed on this device."
+              : "This build was not created from a release tag."
+          }
+        >
+          <span className="text-sm font-bold text-strong">
+            {currentAppVersion ?? "Development build"}
+          </span>
+        </Row>
+
+        {latestVersionQuery.data && (
+          <Row
+            title="Latest release"
+            description="The latest published release reported by GitHub."
+          >
+            <span className="text-sm font-bold text-strong">
+              {latestVersionQuery.data}
+            </span>
+          </Row>
+        )}
+
         <Row title="Theme">
           <Select
             aria-label="Theme"

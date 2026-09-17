@@ -29,11 +29,14 @@ const details: Record<Section, { title: string; description: string }> = {
 const Settings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const domain = useAppSelector((state) => state.daemon.selectedDomain);
+  const daemonAvailable = useAppSelector(
+    (state) => state.daemon.availability === "available",
+  );
   const requested = searchParams.get("section");
   const section: Section =
-    requested === "clusters"
+    requested === "clusters" && daemonAvailable
       ? "clusters"
-      : requested === "cluster" && domain
+      : requested === "cluster" && daemonAvailable && domain
         ? "cluster"
         : "application";
 
@@ -58,8 +61,12 @@ const Settings = () => {
         onChange={setSection}
         data={[
           { label: "Application", value: "application" },
-          { label: "Cluster", value: "cluster", disabled: !domain },
-          { label: "Clusters", value: "clusters" },
+          {
+            label: "Cluster",
+            value: "cluster",
+            disabled: !daemonAvailable || !domain,
+          },
+          { label: "Clusters", value: "clusters", disabled: !daemonAvailable },
         ]}
       />
 
