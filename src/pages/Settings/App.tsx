@@ -9,7 +9,6 @@ import {
   requestPermission,
 } from "@tauri-apps/plugin-notification";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 const THEMES = [
   { value: "system", label: "System" },
@@ -37,7 +36,6 @@ const Row = (props: {
 
 const AppSettings = () => {
   const dispatch = useAppDispatch();
-  const navigate = useNavigate();
   const prefs = useAppSelector((state) => state.prefs.prefs);
   const prefsError = useAppSelector((state) => state.prefs.error);
   const [error, setError] = useState<string | undefined>(undefined);
@@ -104,7 +102,7 @@ const AppSettings = () => {
   return (
     <div className="rounded-xl border border-line bg-surface p-6 shadow-xs">
       <h2 className="text-sm font-extrabold tracking-tight text-strong">
-        Application
+        Application preferences
       </h2>
       <p className="mt-1 text-sm font-medium text-muted">
         These preferences belong to this desktop application. They never affect
@@ -188,26 +186,15 @@ const AppSettings = () => {
 
         <Row
           title="Multiple Clusters"
-          description="Enable the domain switcher and advanced Cluster management. Most people only need one domain."
+          description="Show every configured domain in the Cluster switcher. Most people only need one domain."
         >
-          <div className="flex items-center gap-3">
-            {prefs.multiCluster && (
-              <button
-                type="button"
-                className="text-sm font-semibold text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
-                onClick={() => navigate("/clusters")}
-              >
-                Manage
-              </button>
-            )}
-            <Switch
-              aria-label="Multiple Clusters"
-              checked={prefs.multiCluster}
-              onChange={(event) =>
-                set({ multiCluster: event.currentTarget.checked })
-              }
-            />
-          </div>
+          <Switch
+            aria-label="Multiple Clusters"
+            checked={prefs.multiCluster}
+            onChange={(event) =>
+              set({ multiCluster: event.currentTarget.checked })
+            }
+          />
         </Row>
       </div>
     </div>

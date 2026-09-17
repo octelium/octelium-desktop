@@ -5,7 +5,7 @@ import {
 } from "@/features/prefs/slice";
 import { useAppDispatch, useAppSelector } from "@/utils/hooks";
 import { defaultPrefs, loadPrefs, resolveTheme, savePrefs } from "@/utils/prefs";
-import theme from "@/utils/theme";
+import theme, { cssVariablesResolver } from "@/utils/theme";
 import { MantineProvider } from "@mantine/core";
 import { useEffect, type ReactNode } from "react";
 
@@ -61,7 +61,11 @@ const AppTheme = (props: { children?: ReactNode }) => {
   }, [scheme]);
 
   return (
-    <MantineProvider theme={theme} forceColorScheme={scheme}>
+    <MantineProvider
+      theme={theme}
+      cssVariablesResolver={cssVariablesResolver}
+      forceColorScheme={scheme}
+    >
       {props.children}
     </MantineProvider>
   );

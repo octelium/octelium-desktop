@@ -8,7 +8,6 @@ import routerNamespaces from "./Namespaces/router";
 import routerServices from "./Services/router";
 
 const Connection = lazy(() => import("./Connection"));
-const Clusters = lazy(() => import("./Clusters"));
 const Settings = lazy(() => import("./Settings"));
 const Diagnostics = lazy(() => import("./Diagnostics"));
 
@@ -33,7 +32,7 @@ export default (): RouteObject => {
       routerNamespaces(),
       {
         path: "clusters",
-        element: withSuspense(<Clusters />),
+        element: <Navigate to="/settings?section=clusters" replace />,
       },
       {
         path: "settings",

@@ -1,6 +1,7 @@
 use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
+use tauri::image::Image;
 use tauri::menu::{MenuBuilder, MenuItem, MenuItemBuilder, PredefinedMenuItem};
 use tauri::tray::{TrayIcon, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
@@ -8,6 +9,12 @@ use tauri::{AppHandle, Emitter, Manager, Runtime};
 use crate::window;
 
 pub const TRAY_ID: &str = "octelium";
+
+const TRAY_ICON_SIGNED_OUT: &[u8] = include_bytes!("../icons/tray-signed-out.png");
+const TRAY_ICON_DISCONNECTED: &[u8] = include_bytes!("../icons/tray-disconnected.png");
+const TRAY_ICON_CONNECTED: &[u8] = include_bytes!("../icons/tray-connected.png");
+const TRAY_ICON_BUSY: &[u8] = include_bytes!("../icons/tray-busy.png");
+const TRAY_ICON_UNAVAILABLE: &[u8] = include_bytes!("../icons/tray-unavailable.png");
 
 const MENU_OPEN: &str = "open";
 const MENU_STATUS: &str = "status";
@@ -79,7 +86,7 @@ pub fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<TrayIcon<R>> {
     });
 
     let builder = TrayIconBuilder::with_id(TRAY_ID)
-        .icon(app.default_window_icon().cloned().unwrap())
+        .icon(Image::from_bytes(TRAY_ICON_UNAVAILABLE)?)
         .icon_as_template(true)
         .menu(&menu)
         .on_tray_icon_event(|tray, event| {
@@ -111,12 +118,30 @@ pub fn update<R: Runtime>(app: &AppHandle<R>, summary: &TraySummary) -> tauri::R
         summary.available && domain.is_some_and(|item| item.connected && !item.busy),
     )?;
 
-    #[cfg(not(target_os = "linux"))]
     if let Some(tray) = app.tray_by_id(TRAY_ID) {
+        tray.set_icon_with_as_template(
+            Some(Image::from_bytes(get_icon_bytes(summary))?),
+            true,
+        )?;
+
+        #[cfg(not(target_os = "linux"))]
         tray.set_tooltip(Some(get_tooltip(summary)))?;
     }
 
     Ok(())
+}
+
+fn get_icon_bytes(summary: &TraySummary) -> &'static [u8] {
+    if !summary.available {
+        return TRAY_ICON_UNAVAILABLE;
+    }
+
+    match summary.domains.first() {
+        Some(domain) if domain.busy => TRAY_ICON_BUSY,
+        Some(domain) if domain.connected => TRAY_ICON_CONNECTED,
+        Some(domain) if domain.authenticated => TRAY_ICON_DISCONNECTED,
+        _ => TRAY_ICON_SIGNED_OUT,
+    }
 }
 
 fn get_status_label(summary: &TraySummary) -> String {

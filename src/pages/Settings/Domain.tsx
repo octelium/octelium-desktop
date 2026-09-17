@@ -8,6 +8,7 @@ import {
   ConnectionOptions_TunnelMode,
   DomainSettings,
   type ConnectionOptions_PublishedService,
+  type ConnectionOptions_ServiceReference,
   type DomainState,
 } from "@/gen/client/daemonv1";
 import Notice from "@/components/Notice";
@@ -107,7 +108,7 @@ const PublishedServices = (props: {
 }) => {
   const { domain, enabled, items, onChange } = props;
   const servicesQuery = useQuery({
-    queryKey: ["user/listService", domain, "published-picker"],
+    queryKey: ["user/listService", domain, "settings-picker"],
     enabled,
     queryFn: () => listAllServices(domain),
   });
@@ -227,6 +228,76 @@ const PublishedServices = (props: {
         </div>
       ))}
     </div>
+  );
+};
+
+const ServedServices = (props: {
+  domain: string;
+  enabled: boolean;
+  items: ConnectionOptions_ServiceReference[];
+  onChange: (items: ConnectionOptions_ServiceReference[]) => void;
+}) => {
+  const { domain, enabled, items, onChange } = props;
+  const servicesQuery = useQuery({
+    queryKey: ["user/listService", domain, "settings-picker"],
+    enabled,
+    queryFn: () => listAllServices(domain),
+  });
+
+  const selected = items
+    .map((item) => getServiceReferenceKey(item.name, item.namespace))
+    .filter(Boolean);
+  const services = servicesQuery.data ?? [];
+  const available = new Map(
+    services
+      .filter((service) => service.metadata?.name)
+      .map((service) => [service.metadata!.name!, service]),
+  );
+  const data = [...new Set([...available.keys(), ...selected])].map((value) => {
+    const service = available.get(value);
+    return {
+      value,
+      label: service?.metadata?.displayName
+        ? `${service.metadata.displayName} · ${value}`
+        : value,
+    };
+  });
+
+  return (
+    <MultiSelect
+      label="Services to host"
+      description={
+        enabled
+          ? "Search and select one or more Services this device should host."
+          : "Sign in to select from the Services available to you."
+      }
+      placeholder={selected.length > 0 ? undefined : "Search Services"}
+      searchable
+      clearable
+      hidePickedOptions
+      disabled={!enabled}
+      data={data}
+      value={selected}
+      onChange={(values) =>
+        onChange(
+          values.map(
+            (value) =>
+              items.find(
+                (item) =>
+                  getServiceReferenceKey(item.name, item.namespace) === value,
+              ) ?? splitServiceReferenceKey(value),
+          ),
+        )
+      }
+      nothingFoundMessage={
+        servicesQuery.isLoading ? "Loading Services…" : "No Service found"
+      }
+      error={
+        servicesQuery.isError
+          ? "The Service list could not be loaded. Check your Session."
+          : undefined
+      }
+    />
   );
 };
 
@@ -471,22 +542,24 @@ const DomainSettingsEditor = (props: {
             />
           </Row>
 
-          <Row title="Local DNS listen address">
-            <TextInput
-              aria-label="Local DNS listen address"
-              className="w-[220px]"
-              placeholder="127.0.0.1:53"
-              value={dns.localServerListenAddress}
-              onChange={(event) =>
-                setOptions({
-                  dns: {
-                    ...dns,
-                    localServerListenAddress: event.currentTarget.value,
-                  },
-                })
-              }
-            />
-          </Row>
+          {dns.enableLocalServer && (
+            <Row title="Local DNS listen address">
+              <TextInput
+                aria-label="Local DNS listen address"
+                className="w-[220px]"
+                placeholder="127.0.0.1:53"
+                value={dns.localServerListenAddress}
+                onChange={(event) =>
+                  setOptions({
+                    dns: {
+                      ...dns,
+                      localServerListenAddress: event.currentTarget.value,
+                    },
+                  })
+                }
+              />
+            </Row>
+          )}
 
           <Row
             title="Host every Service"
@@ -508,6 +581,21 @@ const DomainSettingsEditor = (props: {
               }
             />
           </Row>
+
+          {!serviceOptions.serveAll && (
+            <div className="border-b border-line py-4">
+              <ServedServices
+                domain={domain}
+                enabled={isAuthenticated(state)}
+                items={serviceOptions.serve}
+                onChange={(items) =>
+                  setOptions({
+                    serviceOptions: { ...serviceOptions, serve: items },
+                  })
+                }
+              />
+            </div>
+          )}
 
           <Row
             title="Embedded SSH server"

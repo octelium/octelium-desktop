@@ -3,7 +3,6 @@ import ClusterSignIn from "@/components/ClusterSignIn";
 import Label from "@/components/Label";
 import PageHeader from "@/components/PageHeader";
 import StatusDot from "@/components/StatusDot";
-import { EmptyState } from "@/components/AsyncState";
 import {
   authenticateBrowser,
   connect,
@@ -28,15 +27,20 @@ import { useAppSelector } from "@/utils/hooks";
 import { openExternal } from "@/utils/native";
 import { Button } from "@mantine/core";
 import { useMutation } from "@tanstack/react-query";
-import { LogIn, LogOut, Plug, PlugZap, Server, Trash2 } from "lucide-react";
+import { LogIn, LogOut, Plug, PlugZap, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const AddCluster = () => {
+const AddCluster = (props: { hasClusters: boolean }) => {
   return (
     <ClusterSignIn
-      title="Add another Cluster"
-      description="This is an advanced workflow. Your selected domain becomes the primary Cluster shown throughout the app."
+      compact
+      title={props.hasClusters ? "Add another Cluster" : "Add a Cluster"}
+      description={
+        props.hasClusters
+          ? "Add another domain. The selected domain becomes the primary Cluster shown throughout the app."
+          : "Enter your Cluster domain to sign in and connect this device."
+      }
     />
   );
 };
@@ -227,27 +231,23 @@ const ClusterItem = (props: { item: DomainState }) => {
   );
 };
 
-const Clusters = () => {
+const Clusters = (props: { embedded?: boolean }) => {
   const status = useAppSelector((state) => state.daemon.status);
   const domains = status?.domains ?? [];
 
   return (
     <div className="w-full">
-      <PageHeader
-        title="Clusters"
-        description="Every Cluster is authenticated and connected independently."
-      />
+      {!props.embedded && (
+        <PageHeader
+          title="Clusters"
+          description="Every Cluster is authenticated and connected independently."
+        />
+      )}
 
       <div className="flex flex-col gap-4">
-        <AddCluster />
+        <AddCluster hasClusters={domains.length > 0} />
 
-        {domains.length < 1 ? (
-          <EmptyState
-            title="No Cluster yet"
-            message="Add your Cluster domain above in order to sign in and connect."
-            icon={<Server size={22} aria-hidden />}
-          />
-        ) : (
+        {domains.length > 0 && (
           <div className="flex w-full flex-col gap-2.5">
             {domains.map((itm) => (
               <ClusterItem key={itm.domain} item={itm} />

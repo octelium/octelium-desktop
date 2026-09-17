@@ -15,8 +15,8 @@
       {
         "label": "main",
         "title": "Octelium",
-        "width": 960,
-        "height": 680,
+        "width": 1100,
+        "height": 760,
         "minWidth": 780,
         "minHeight": 560,
         "resizable": true,

@@ -6,14 +6,9 @@ import { toRFC3339 } from "@/utils";
 import {
   getAuthenticationStateLabel,
   getConnectionStateLabel,
-  getDNSModeLabel,
-  getImplementationModeLabel,
-  getTunnelModeLabel,
 } from "@/utils/daemon";
 import { useAppSelector } from "@/utils/hooks";
 import { getAppInfo, isNative, type AppInfo } from "@/utils/native";
-import { Alert, Button } from "@mantine/core";
-import { ClipboardCopy } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const Mono = (props: { children?: React.ReactNode }) => (
@@ -27,8 +22,6 @@ const Diagnostics = () => {
   const status = useAppSelector((state) => state.daemon.status);
   const availability = useAppSelector((state) => state.daemon.availability);
   const [appInfo, setAppInfo] = useState<AppInfo | undefined>(undefined);
-  const [copied, setCopied] = useState(false);
-  const [copyError, setCopyError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!isNative()) {
@@ -38,87 +31,23 @@ const Diagnostics = () => {
     void getAppInfo().then(setAppInfo).catch(() => {});
   }, []);
 
-  const bundle = {
-    application: appInfo,
-    daemon: {
-      version: info?.version,
-      apiMajorVersion: info?.apiMajorVersion,
-      apiMinorVersion: info?.apiMinorVersion,
-      instanceID: info?.instanceID,
-      principal: info?.principal,
-      availability,
-    },
-    status: {
-      revision: status?.revision,
-      updatedAt: toRFC3339(status?.updatedAt),
-      domains: (status?.domains ?? []).map((itm) => ({
-        domain: itm.domain,
-        authentication: getAuthenticationStateLabel(itm.authentication?.state),
-        authenticatedAt: toRFC3339(itm.authentication?.authenticatedAt),
-        expiresAt: toRFC3339(itm.authentication?.expiresAt),
-        connection: getConnectionStateLabel(itm.connection?.state),
-        connectedAt: toRFC3339(itm.connection?.connectedAt),
-        tunnelMode: getTunnelModeLabel(itm.connection?.tunnelMode),
-        implementationMode: getImplementationModeLabel(
-          itm.connection?.implementationMode,
-        ),
-        deviceName: itm.connection?.deviceName,
-        mtu: itm.connection?.mtu,
-        addresses: itm.connection?.addresses,
-        dns: {
-          mode: getDNSModeLabel(itm.connection?.dns?.mode),
-          isConfigured: itm.connection?.dns?.isConfigured,
-          servers: itm.connection?.dns?.servers,
-        },
-        lastError: itm.lastError,
-      })),
-    },
-  };
-
   return (
     <div className="w-full">
       <PageHeader
         title="Diagnostics"
-        description="Everything the Octelium daemon exposes about this machine. No credential is ever included."
-        actions={
-          <Button
-            variant="outline"
-            leftSection={<ClipboardCopy size={15} aria-hidden />}
-            onClick={async () => {
-              try {
-                setCopyError(undefined);
-                await navigator.clipboard.writeText(
-                  JSON.stringify(bundle, null, 2),
-                );
-                setCopied(true);
-                window.setTimeout(() => setCopied(false), 1500);
-              } catch (err) {
-                setCopyError(err instanceof Error ? err.message : String(err));
-              }
-            }}
-          >
-            {copied ? "Copied" : "Copy the report"}
-          </Button>
-        }
+        description="Runtime information for troubleshooting the application and local daemon."
       />
-
-      {copyError && (
-        <Alert color="red" radius="md" className="mb-5" title="Could not copy">
-          {copyError}
-        </Alert>
-      )}
-
-      <Alert color="orange" radius="md" className="mb-5" title="Share carefully">
-        The report contains Cluster domains, local addresses, the daemon
-        instance identifier, and OS principal information. Review it before
-        sharing it outside your organization.
-      </Alert>
 
       <div className="flex flex-col gap-4">
         <div className="rounded-xl border border-line bg-surface p-6 shadow-xs">
-          <h2 className="mb-4 text-sm font-extrabold tracking-tight text-strong">
-            Daemon
-          </h2>
+          <div className="mb-4 flex items-center gap-2">
+            <h2 className="text-sm font-extrabold tracking-tight text-strong">
+              Daemon
+            </h2>
+            <Label tone={availability === "available" ? "emerald" : "rose"}>
+              {availability === "available" ? "Available" : "Unavailable"}
+            </Label>
+          </div>
           <dl className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             <InfoItem title="Version">{info?.version || "—"}</InfoItem>
             <InfoItem title="Local API">

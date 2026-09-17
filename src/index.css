@@ -19,10 +19,10 @@
 }
 
 :root {
-  --oct-app: #f6f8fb;
+  --oct-app: #f1f5f9;
   --oct-surface: #ffffff;
   --oct-surface-2: #f8fafc;
-  --oct-surface-3: #eef2f7;
+  --oct-surface-3: #f1f5f9;
   --oct-line: #e2e8f0;
   --oct-line-strong: #cbd5e1;
   --oct-strong: #0f172a;
@@ -41,19 +41,19 @@
 }
 
 [data-theme="dark"] {
-  --oct-app: #0b1120;
-  --oct-surface: #121b2d;
-  --oct-surface-2: #0f1728;
-  --oct-surface-3: #1b2940;
-  --oct-line: #253550;
-  --oct-line-strong: #3a4d6b;
-  --oct-strong: #f8fafc;
-  --oct-body: #cbd5e1;
-  --oct-muted: #94a3b8;
-  --oct-faint: #64748b;
-  --oct-inverse: #f1f5f9;
-  --oct-inverse-fg: #0f172a;
-  --oct-inverse-hover: #cbd5e1;
+  --oct-app: #0f0f0f;
+  --oct-surface: #1c1c1c;
+  --oct-surface-2: #232323;
+  --oct-surface-3: #2a2a2a;
+  --oct-line: #2b2b2b;
+  --oct-line-strong: #3d3d3d;
+  --oct-strong: #ededed;
+  --oct-body: #d0d0d0;
+  --oct-muted: #a3a3a3;
+  --oct-faint: #7a7a7a;
+  --oct-inverse: #ededed;
+  --oct-inverse-fg: #141414;
+  --oct-inverse-hover: #fafafa;
 
   color-scheme: dark;
 }
@@ -74,6 +74,13 @@ body {
 button,
 a {
   -webkit-tap-highlight-color: transparent;
+}
+
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--oct-strong);
+  outline-offset: 2px;
 }
 
 button {

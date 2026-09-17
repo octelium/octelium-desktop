@@ -44,7 +44,7 @@ const Root = () => {
           header={{ height: 60 }}
           navbar={{
             width: 236,
-            breakpoint: "md",
+            breakpoint: "sm",
             collapsed: { mobile: !opened },
           }}
           padding="md"
@@ -54,7 +54,7 @@ const Root = () => {
               <Burger
                 opened={opened}
                 onClick={toggle}
-                hiddenFrom="md"
+                hiddenFrom="sm"
                 size="sm"
                 aria-label={opened ? "Close navigation" : "Open navigation"}
               />
