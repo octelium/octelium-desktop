@@ -1,4 +1,6 @@
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
+use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use tauri::image::Image;
@@ -10,11 +12,44 @@ use crate::window;
 
 pub const TRAY_ID: &str = "octelium";
 
-const TRAY_ICON_SIGNED_OUT: &[u8] = include_bytes!("../icons/tray-signed-out.png");
-const TRAY_ICON_DISCONNECTED: &[u8] = include_bytes!("../icons/tray-disconnected.png");
-const TRAY_ICON_CONNECTED: &[u8] = include_bytes!("../icons/tray-connected.png");
-const TRAY_ICON_BUSY: &[u8] = include_bytes!("../icons/tray-busy.png");
-const TRAY_ICON_UNAVAILABLE: &[u8] = include_bytes!("../icons/tray-unavailable.png");
+macro_rules! tray_art {
+    ($dir:literal, $template:literal) => {
+        mod art {
+            pub const IS_TEMPLATE: bool = $template;
+
+            pub const CONNECTED: &[u8] =
+                include_bytes!(concat!("../icons/tray/", $dir, "/connected.png"));
+            pub const DISCONNECTED: &[u8] =
+                include_bytes!(concat!("../icons/tray/", $dir, "/disconnected.png"));
+            pub const SIGNED_OUT: &[u8] =
+                include_bytes!(concat!("../icons/tray/", $dir, "/signed-out.png"));
+            pub const UNAVAILABLE: &[u8] =
+                include_bytes!(concat!("../icons/tray/", $dir, "/unavailable.png"));
+
+            pub const BUSY: [&[u8]; 8] = [
+                include_bytes!(concat!("../icons/tray/", $dir, "/busy-0.png")),
+                include_bytes!(concat!("../icons/tray/", $dir, "/busy-1.png")),
+                include_bytes!(concat!("../icons/tray/", $dir, "/busy-2.png")),
+                include_bytes!(concat!("../icons/tray/", $dir, "/busy-3.png")),
+                include_bytes!(concat!("../icons/tray/", $dir, "/busy-4.png")),
+                include_bytes!(concat!("../icons/tray/", $dir, "/busy-5.png")),
+                include_bytes!(concat!("../icons/tray/", $dir, "/busy-6.png")),
+                include_bytes!(concat!("../icons/tray/", $dir, "/busy-7.png")),
+            ];
+        }
+    };
+}
+
+#[cfg(target_os = "macos")]
+tray_art!("macos", true);
+#[cfg(target_os = "windows")]
+tray_art!("windows", false);
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+tray_art!("linux", false);
+
+const SPINNER_INTERVAL: Duration = Duration::from_millis(140);
+
+static SPINNER_GENERATION: AtomicU64 = AtomicU64::new(0);
 
 const MENU_OPEN: &str = "open";
 const MENU_STATUS: &str = "status";
@@ -48,11 +83,21 @@ struct TrayAction {
     path: Option<String>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Status {
+    Unavailable,
+    SignedOut,
+    Disconnected,
+    Busy,
+    Connected,
+}
+
 struct TrayState<R: Runtime> {
     status: MenuItem<R>,
     connect: MenuItem<R>,
     disconnect: MenuItem<R>,
     domain: Mutex<Option<String>>,
+    painted: Mutex<Status>,
 }
 
 pub fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<TrayIcon<R>> {
@@ -83,11 +128,12 @@ pub fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<TrayIcon<R>> {
         connect,
         disconnect,
         domain: Mutex::new(None),
+        painted: Mutex::new(Status::Unavailable),
     });
 
     let builder = TrayIconBuilder::with_id(TRAY_ID)
-        .icon(Image::from_bytes(TRAY_ICON_UNAVAILABLE)?)
-        .icon_as_template(true)
+        .icon(Image::from_bytes(get_icon(Status::Unavailable))?)
+        .icon_as_template(art::IS_TEMPLATE)
         .menu(&menu)
         .on_tray_icon_event(|tray, event| {
             if let TrayIconEvent::DoubleClick { .. } = event {
@@ -118,29 +164,86 @@ pub fn update<R: Runtime>(app: &AppHandle<R>, summary: &TraySummary) -> tauri::R
         summary.available && domain.is_some_and(|item| item.connected && !item.busy),
     )?;
 
+    #[cfg(not(target_os = "linux"))]
     if let Some(tray) = app.tray_by_id(TRAY_ID) {
-        tray.set_icon_with_as_template(
-            Some(Image::from_bytes(get_icon_bytes(summary))?),
-            true,
-        )?;
-
-        #[cfg(not(target_os = "linux"))]
         tray.set_tooltip(Some(get_tooltip(summary)))?;
+    }
+
+    let status = get_status(summary);
+    if *state.painted.lock().unwrap() == status {
+        return Ok(());
+    }
+
+    let generation = SPINNER_GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
+    set_icon(app, get_icon(status))?;
+    *state.painted.lock().unwrap() = status;
+
+    if status == Status::Busy {
+        spin(app, generation);
     }
 
     Ok(())
 }
 
-fn get_icon_bytes(summary: &TraySummary) -> &'static [u8] {
+fn set_icon<R: Runtime>(app: &AppHandle<R>, icon: &'static [u8]) -> tauri::Result<()> {
+    if let Some(tray) = app.tray_by_id(TRAY_ID) {
+        tray.set_icon_with_as_template(Some(Image::from_bytes(icon)?), art::IS_TEMPLATE)?;
+    }
+
+    Ok(())
+}
+
+fn spin<R: Runtime>(app: &AppHandle<R>, generation: u64) {
+    let Some(tray) = app.tray_by_id(TRAY_ID) else {
+        return;
+    };
+
+    std::thread::spawn(move || {
+        let mut frame = 0;
+
+        loop {
+            std::thread::sleep(SPINNER_INTERVAL);
+
+            if SPINNER_GENERATION.load(Ordering::SeqCst) != generation {
+                break;
+            }
+
+            frame = (frame + 1) % art::BUSY.len();
+
+            let Ok(image) = Image::from_bytes(art::BUSY[frame]) else {
+                break;
+            };
+
+            if tray
+                .set_icon_with_as_template(Some(image), art::IS_TEMPLATE)
+                .is_err()
+            {
+                break;
+            }
+        }
+    });
+}
+
+fn get_status(summary: &TraySummary) -> Status {
     if !summary.available {
-        return TRAY_ICON_UNAVAILABLE;
+        return Status::Unavailable;
     }
 
     match summary.domains.first() {
-        Some(domain) if domain.busy => TRAY_ICON_BUSY,
-        Some(domain) if domain.connected => TRAY_ICON_CONNECTED,
-        Some(domain) if domain.authenticated => TRAY_ICON_DISCONNECTED,
-        _ => TRAY_ICON_SIGNED_OUT,
+        Some(domain) if domain.busy => Status::Busy,
+        Some(domain) if domain.connected => Status::Connected,
+        Some(domain) if domain.authenticated => Status::Disconnected,
+        _ => Status::SignedOut,
+    }
+}
+
+fn get_icon(status: Status) -> &'static [u8] {
+    match status {
+        Status::Unavailable => art::UNAVAILABLE,
+        Status::SignedOut => art::SIGNED_OUT,
+        Status::Disconnected => art::DISCONNECTED,
+        Status::Busy => art::BUSY[0],
+        Status::Connected => art::CONNECTED,
     }
 }
 
@@ -205,26 +308,78 @@ fn emit<R: Runtime>(app: &AppHandle<R>, action: TrayAction) {
 mod tests {
     use super::*;
 
+    fn summary(available: bool, domain: Option<TrayDomain>) -> TraySummary {
+        TraySummary {
+            available,
+            domains: domain.into_iter().collect(),
+        }
+    }
+
+    fn domain(connected: bool, busy: bool, authenticated: bool) -> TrayDomain {
+        TrayDomain {
+            domain: "example.com".to_string(),
+            connected,
+            busy,
+            authenticated,
+        }
+    }
+
     #[test]
     fn test_status_labels() {
         assert_eq!(
-            get_status_label(&TraySummary {
-                available: false,
-                domains: vec![],
-            }),
+            get_status_label(&summary(false, None)),
             "The daemon is not running"
         );
         assert_eq!(
-            get_status_label(&TraySummary {
-                available: true,
-                domains: vec![TrayDomain {
-                    domain: "example.com".to_string(),
-                    connected: true,
-                    busy: false,
-                    authenticated: true,
-                }],
-            }),
+            get_status_label(&summary(true, None)),
+            "No Cluster configured"
+        );
+        assert_eq!(
+            get_status_label(&summary(true, Some(domain(true, false, true)))),
             "example.com — Connected"
         );
+    }
+
+    #[test]
+    fn test_status() {
+        assert_eq!(get_status(&summary(false, None)), Status::Unavailable);
+        assert_eq!(
+            get_status(&summary(false, Some(domain(true, false, true)))),
+            Status::Unavailable
+        );
+        assert_eq!(get_status(&summary(true, None)), Status::SignedOut);
+        assert_eq!(
+            get_status(&summary(true, Some(domain(false, false, false)))),
+            Status::SignedOut
+        );
+        assert_eq!(
+            get_status(&summary(true, Some(domain(false, false, true)))),
+            Status::Disconnected
+        );
+        assert_eq!(
+            get_status(&summary(true, Some(domain(true, false, true)))),
+            Status::Connected
+        );
+        assert_eq!(
+            get_status(&summary(true, Some(domain(true, true, true)))),
+            Status::Busy
+        );
+    }
+
+    #[test]
+    fn test_every_status_has_distinct_artwork() {
+        let icons = [
+            Status::Unavailable,
+            Status::SignedOut,
+            Status::Disconnected,
+            Status::Busy,
+            Status::Connected,
+        ]
+        .map(get_icon);
+
+        for (index, icon) in icons.iter().enumerate() {
+            assert!(!icon.is_empty());
+            assert!(!icons[index + 1..].contains(icon));
+        }
     }
 }

@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "tauri": "tauri",
     "sidecar": "node scripts/prepare-sidecar.mjs",
+    "icons": "node scripts/gen-tray-icons.mjs",
     "gen": "./scripts/gen.sh"
   },
   "dependencies": {

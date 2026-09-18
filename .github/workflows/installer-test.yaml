@@ -112,12 +112,25 @@ jobs:
           package="$(find artifact -type f -name '*.pkg' ! -name 'upgrade-baseline-*' -print -quit)"
           baseline="$(find artifact -type f -name 'upgrade-baseline-*.pkg' -print -quit)"
           [[ -n "$package" && -n "$baseline" ]]
+          require_running_daemon() {
+            for attempt in {1..60}; do
+              if sudo launchctl print system/com.octelium.desktop.daemon 2>/dev/null \
+                | grep -q "state = running" && [[ -S /var/run/octelium/daemon.sock ]]; then
+                return 0
+              fi
+              sleep 1
+            done
+            sudo launchctl print system/com.octelium.desktop.daemon || true
+            sudo cat /var/log/octelium-desktop-daemon.log || true
+            sudo log show --predicate 'process == "octelium-desktop-daemon"' --last 5m --style compact || true
+            return 1
+          }
           sudo installer -pkg "$baseline" -target /
-          sudo launchctl print system/com.octelium.desktop.daemon >/dev/null
+          require_running_daemon
           test -x "/Applications/Octelium Desktop.app/Contents/MacOS/octelium-desktop-daemon"
           test -x "/Library/Application Support/Octelium Desktop/uninstall.sh"
           sudo installer -pkg "$package" -target /
-          sudo launchctl print system/com.octelium.desktop.daemon >/dev/null
+          require_running_daemon
           sudo "/Library/Application Support/Octelium Desktop/uninstall.sh"
           ! sudo launchctl print system/com.octelium.desktop.daemon >/dev/null 2>&1
           test ! -e "/Applications/Octelium Desktop.app"

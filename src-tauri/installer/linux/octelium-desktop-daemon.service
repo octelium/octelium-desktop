@@ -7,8 +7,9 @@ After=network-online.target
 Type=simple
 StateDirectory=octelium-desktop
 StateDirectoryMode=0700
-ExecStart=/usr/bin/octelium-desktop-daemon --homedir /var/lib/octelium-desktop daemon
-Restart=on-failure
+Environment=OCTELIUM_HOME=/var/lib/octelium-desktop
+ExecStart=/usr/bin/octelium-desktop-daemon daemon
+Restart=always
 RestartSec=5s
 
 [Install]

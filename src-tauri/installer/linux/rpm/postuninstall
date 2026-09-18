@@ -1,6 +1,10 @@
 #!/bin/sh
 set -e
 
+if [ "$1" -eq 0 ]; then
+    rm -rf /var/lib/octelium-desktop
+fi
+
 if [ -d /run/systemd/system ]; then
     systemctl daemon-reload
 fi
