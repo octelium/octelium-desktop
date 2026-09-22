@@ -8,12 +8,16 @@ type State = {
   error?: string;
 };
 
+const prefersDark =
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-color-scheme: dark)").matches;
+
 export const slice = createSlice({
   name: "prefs",
   initialState: {
     prefs: defaultPrefs,
     isLoaded: false,
-    prefersDark: false,
+    prefersDark,
   } as State,
   reducers: {
     setPrefs: (state, action: PayloadAction<{ prefs: Prefs }>) => {

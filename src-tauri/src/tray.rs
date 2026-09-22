@@ -1,6 +1,4 @@
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
-use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use tauri::image::Image;
@@ -13,43 +11,23 @@ use crate::window;
 pub const TRAY_ID: &str = "octelium";
 
 macro_rules! tray_art {
-    ($dir:literal, $template:literal) => {
+    ($dir:literal) => {
         mod art {
-            pub const IS_TEMPLATE: bool = $template;
-
+            pub const LOGO: &[u8] = include_bytes!(concat!("../icons/tray/", $dir, "/logo.png"));
             pub const CONNECTED: &[u8] =
                 include_bytes!(concat!("../icons/tray/", $dir, "/connected.png"));
-            pub const DISCONNECTED: &[u8] =
-                include_bytes!(concat!("../icons/tray/", $dir, "/disconnected.png"));
             pub const SIGNED_OUT: &[u8] =
                 include_bytes!(concat!("../icons/tray/", $dir, "/signed-out.png"));
-            pub const UNAVAILABLE: &[u8] =
-                include_bytes!(concat!("../icons/tray/", $dir, "/unavailable.png"));
-
-            pub const BUSY: [&[u8]; 8] = [
-                include_bytes!(concat!("../icons/tray/", $dir, "/busy-0.png")),
-                include_bytes!(concat!("../icons/tray/", $dir, "/busy-1.png")),
-                include_bytes!(concat!("../icons/tray/", $dir, "/busy-2.png")),
-                include_bytes!(concat!("../icons/tray/", $dir, "/busy-3.png")),
-                include_bytes!(concat!("../icons/tray/", $dir, "/busy-4.png")),
-                include_bytes!(concat!("../icons/tray/", $dir, "/busy-5.png")),
-                include_bytes!(concat!("../icons/tray/", $dir, "/busy-6.png")),
-                include_bytes!(concat!("../icons/tray/", $dir, "/busy-7.png")),
-            ];
         }
     };
 }
 
 #[cfg(target_os = "macos")]
-tray_art!("macos", true);
+tray_art!("macos");
 #[cfg(target_os = "windows")]
-tray_art!("windows", false);
+tray_art!("windows");
 #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-tray_art!("linux", false);
-
-const SPINNER_INTERVAL: Duration = Duration::from_millis(140);
-
-static SPINNER_GENERATION: AtomicU64 = AtomicU64::new(0);
+tray_art!("linux");
 
 const MENU_OPEN: &str = "open";
 const MENU_STATUS: &str = "status";
@@ -133,7 +111,7 @@ pub fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<TrayIcon<R>> {
 
     let builder = TrayIconBuilder::with_id(TRAY_ID)
         .icon(Image::from_bytes(get_icon(Status::Unavailable))?)
-        .icon_as_template(art::IS_TEMPLATE)
+        .icon_as_template(false)
         .menu(&menu)
         .on_tray_icon_event(|tray, event| {
             if let TrayIconEvent::DoubleClick { .. } = event {
@@ -174,54 +152,18 @@ pub fn update<R: Runtime>(app: &AppHandle<R>, summary: &TraySummary) -> tauri::R
         return Ok(());
     }
 
-    let generation = SPINNER_GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
     set_icon(app, get_icon(status))?;
     *state.painted.lock().unwrap() = status;
-
-    if status == Status::Busy {
-        spin(app, generation);
-    }
 
     Ok(())
 }
 
 fn set_icon<R: Runtime>(app: &AppHandle<R>, icon: &'static [u8]) -> tauri::Result<()> {
     if let Some(tray) = app.tray_by_id(TRAY_ID) {
-        tray.set_icon_with_as_template(Some(Image::from_bytes(icon)?), art::IS_TEMPLATE)?;
+        tray.set_icon_with_as_template(Some(Image::from_bytes(icon)?), false)?;
     }
 
     Ok(())
-}
-
-fn spin<R: Runtime>(app: &AppHandle<R>, generation: u64) {
-    let Some(tray) = app.tray_by_id(TRAY_ID) else {
-        return;
-    };
-
-    std::thread::spawn(move || {
-        let mut frame = 0;
-
-        loop {
-            std::thread::sleep(SPINNER_INTERVAL);
-
-            if SPINNER_GENERATION.load(Ordering::SeqCst) != generation {
-                break;
-            }
-
-            frame = (frame + 1) % art::BUSY.len();
-
-            let Ok(image) = Image::from_bytes(art::BUSY[frame]) else {
-                break;
-            };
-
-            if tray
-                .set_icon_with_as_template(Some(image), art::IS_TEMPLATE)
-                .is_err()
-            {
-                break;
-            }
-        }
-    });
 }
 
 fn get_status(summary: &TraySummary) -> Status {
@@ -239,11 +181,9 @@ fn get_status(summary: &TraySummary) -> Status {
 
 fn get_icon(status: Status) -> &'static [u8] {
     match status {
-        Status::Unavailable => art::UNAVAILABLE,
         Status::SignedOut => art::SIGNED_OUT,
-        Status::Disconnected => art::DISCONNECTED,
-        Status::Busy => art::BUSY[0],
         Status::Connected => art::CONNECTED,
+        Status::Unavailable | Status::Disconnected | Status::Busy => art::LOGO,
     }
 }
 
@@ -367,19 +307,11 @@ mod tests {
     }
 
     #[test]
-    fn test_every_status_has_distinct_artwork() {
-        let icons = [
-            Status::Unavailable,
-            Status::SignedOut,
-            Status::Disconnected,
-            Status::Busy,
-            Status::Connected,
-        ]
-        .map(get_icon);
-
-        for (index, icon) in icons.iter().enumerate() {
-            assert!(!icon.is_empty());
-            assert!(!icons[index + 1..].contains(icon));
-        }
+    fn test_status_artwork() {
+        assert_eq!(get_icon(Status::Unavailable), art::LOGO);
+        assert_eq!(get_icon(Status::Disconnected), art::LOGO);
+        assert_eq!(get_icon(Status::Busy), art::LOGO);
+        assert_eq!(get_icon(Status::SignedOut), art::SIGNED_OUT);
+        assert_eq!(get_icon(Status::Connected), art::CONNECTED);
     }
 }

@@ -7,7 +7,7 @@ import { useAppDispatch, useAppSelector } from "@/utils/hooks";
 import { defaultPrefs, loadPrefs, resolveTheme, savePrefs } from "@/utils/prefs";
 import theme, { cssVariablesResolver } from "@/utils/theme";
 import { MantineProvider } from "@mantine/core";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, type ReactNode } from "react";
 
 const AppTheme = (props: { children?: ReactNode }) => {
   const dispatch = useAppDispatch();
@@ -56,7 +56,7 @@ const AppTheme = (props: { children?: ReactNode }) => {
 
   const scheme = resolveTheme(prefs.theme, prefersDark);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.setAttribute("data-theme", scheme);
   }, [scheme]);
 

@@ -18,38 +18,27 @@ const MARK_PATH = join(ROOT, "src", "assets", "mark.svg");
 const OUT_DIR = join(ROOT, "src-tauri", "icons", "tray");
 
 const GRID = 16;
-const CENTER = GRID / 2;
 const INSET = 0.3;
 const BLADE_WEIGHT = 2;
 
-const CORE = 2.55;
 const BADGE = { x: 12.5, y: 12.5, r: 2.8, gap: 4.15 };
-const STRIKE = { from: 4.3, to: 11.7, width: 1.7, gap: 3 };
 
 const TONES = {
-  connected: "#059669",
-  busy: "#D97706",
-  idle: "#64748B",
-  error: "#F43F5E",
-  attention: "#D97706",
+  mark: "#71717A",
+  connected: "#16A34A",
+  signedOut: "#64748B",
 };
 
 const ICONS = [
-  { name: "connected", core: true, tone: TONES.connected },
-  { name: "disconnected", tone: TONES.idle },
-  { name: "signed-out", tone: TONES.idle, badge: true },
-  { name: "unavailable", tone: TONES.error, strike: true },
-  ...Array.from({ length: 8 }, (_, frame) => ({
-    name: `busy-${frame}`,
-    tone: TONES.busy,
-    skip: frame,
-  })),
+  { name: "logo" },
+  { name: "connected", badge: TONES.connected },
+  { name: "signed-out", badge: TONES.signedOut },
 ];
 
 const TARGETS = [
-  { dir: "macos", size: 36, mono: true },
-  { dir: "windows", size: 32, mono: false },
-  { dir: "linux", size: 64, mono: false },
+  { dir: "macos", size: 36 },
+  { dir: "windows", size: 32 },
+  { dir: "linux", size: 64 },
 ];
 
 const readMark = () => {
@@ -69,11 +58,8 @@ const readMark = () => {
 const mark = readMark();
 const scale = Number(((GRID - 2 * INSET) / mark.size).toFixed(8));
 
-const blades = (skip) => {
-  const drawn = mark.blades
-    .filter((_, index) => index !== skip)
-    .map((d) => `<path d="${d}"/>`)
-    .join("");
+const blades = () => {
+  const drawn = mark.blades.map((d) => `<path d="${d}"/>`).join("");
   return `<g transform="translate(${INSET} ${INSET}) scale(${scale})" fill="currentColor" stroke="currentColor" stroke-width="${BLADE_WEIGHT}" stroke-linejoin="round">${drawn}</g>`;
 };
 
@@ -88,32 +74,18 @@ ${cut}
 <g mask="url(#cut)">${body}</g>
 ${draw}`;
 
-const render = (icon, color, mono) => {
-  let body = blades(icon.skip);
-
-  if (icon.core) {
-    body += `<circle cx="${CENTER}" cy="${CENTER}" r="${CORE}" fill="currentColor"/>`;
-  }
+const render = (icon) => {
+  let body = blades();
 
   if (icon.badge) {
     body = overlay(
       body,
       `<circle cx="${BADGE.x}" cy="${BADGE.y}" r="${BADGE.gap}" fill="#000"/>`,
-      `<circle cx="${BADGE.x}" cy="${BADGE.y}" r="${BADGE.r}" fill="${mono ? "currentColor" : TONES.attention}"/>`,
+      `<circle cx="${BADGE.x}" cy="${BADGE.y}" r="${BADGE.r}" fill="${icon.badge}"/>`,
     );
   }
 
-  if (icon.strike) {
-    const line = (width, stroke) =>
-      `<path d="M${STRIKE.from} ${STRIKE.from}L${STRIKE.to} ${STRIKE.to}" stroke="${stroke}" stroke-width="${width}" stroke-linecap="round" fill="none"/>`;
-    body = overlay(
-      body,
-      line(STRIKE.gap, "#000"),
-      line(STRIKE.width, "currentColor"),
-    );
-  }
-
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${GRID}" height="${GRID}" viewBox="0 0 ${GRID} ${GRID}" color="${color}">${body}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${GRID}" height="${GRID}" viewBox="0 0 ${GRID} ${GRID}" color="${TONES.mark}">${body}</svg>`;
 };
 
 const main = () => {
@@ -125,10 +97,7 @@ const main = () => {
 
     for (const icon of ICONS) {
       const source = join(scratch, `${target.dir}-${icon.name}.svg`);
-      writeFileSync(
-        source,
-        render(icon, target.mono ? "#000000" : icon.tone, target.mono),
-      );
+      writeFileSync(source, render(icon));
       execFileSync("rsvg-convert", [
         "-w",
         String(target.size),

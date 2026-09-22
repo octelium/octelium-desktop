@@ -22,6 +22,8 @@ export const cssVariablesResolver: CSSVariablesResolver = () => ({
   },
   dark: {
     "--mantine-color-dark-0": "var(--oct-strong)",
+    "--mantine-color-black": "var(--oct-surface)",
+
     "--mantine-color-dark-1": "var(--oct-body)",
     "--mantine-color-dark-2": "var(--oct-muted)",
     "--mantine-color-dark-3": "var(--oct-faint)",
@@ -35,8 +37,15 @@ export const cssVariablesResolver: CSSVariablesResolver = () => ({
     "--mantine-color-accent-filled": "var(--oct-inverse)",
     "--mantine-color-accent-filled-hover": "var(--oct-inverse-hover)",
     "--mantine-color-accent-outline": "var(--oct-inverse)",
-    "--mantine-color-accent-outline-hover": "rgb(237 237 237 / 0.05)",
+    "--mantine-color-accent-outline-hover":
+      "color-mix(in oklab, var(--oct-inverse) 6%, transparent)",
     "--mantine-color-accent-contrast": "var(--oct-inverse-fg)",
+    "--mantine-color-accent-light": "var(--oct-surface-3)",
+    "--mantine-color-accent-light-hover": "var(--oct-surface-active)",
+    "--mantine-color-accent-light-color": "var(--oct-strong)",
+    "--mantine-primary-color-light": "var(--oct-surface-3)",
+    "--mantine-primary-color-light-hover": "var(--oct-surface-active)",
+    "--mantine-primary-color-light-color": "var(--oct-strong)",
   },
 });
 
