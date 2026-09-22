@@ -138,7 +138,10 @@ pub fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<TrayIcon<R>> {
     });
 
     let builder = TrayIconBuilder::with_id(TRAY_ID)
-        .icon(Image::from_bytes(get_icon(Status::Unavailable, appearance))?)
+        .icon(Image::from_bytes(get_icon(
+            Status::Unavailable,
+            appearance,
+        ))?)
         .icon_as_template(false)
         .menu(&menu)
         .on_tray_icon_event(|tray, event| {

@@ -71,6 +71,15 @@ set -e
 
 label="com.octelium.desktop.daemon"
 plist="/Library/LaunchDaemons/com.octelium.desktop.daemon.plist"
+daemon="/Applications/Octelium Desktop.app/Contents/MacOS/octelium-desktop-daemon"
+
+if [ ! -x "$daemon" ]; then
+    printf '%s\n' "The Octelium Desktop daemon executable is missing" >&2
+    exit 1
+fi
+
+chown root:wheel "$plist"
+chmod 644 "$plist"
 
 launchctl enable "system/$label" 2>/dev/null || true
 
@@ -90,7 +99,7 @@ if ! launchctl print "system/$label" >/dev/null 2>&1; then
     launchctl bootstrap system "$plist"
 fi
 
-launchctl kickstart "system/$label" 2>/dev/null || true
+launchctl kickstart -k "system/$label"
 
 exit 0
 SCRIPT

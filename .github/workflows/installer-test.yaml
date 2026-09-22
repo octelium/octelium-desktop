@@ -26,18 +26,27 @@ jobs:
           - runner: ubuntu-24.04
             arch: amd64
             package: rpm
+          - runner: ubuntu-24.04
+            arch: amd64
+            package: archlinux
+            package_arch: x86_64
           - runner: ubuntu-24.04-arm
             arch: arm64
             package: deb
           - runner: ubuntu-24.04-arm
             arch: arm64
             package: rpm
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+            package: archlinux
+            package_arch: aarch64
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
           name: ${{ inputs.artifact_prefix }}-linux-${{ matrix.arch }}
           path: artifact
       - name: Install, upgrade and uninstall
+        if: matrix.package != 'archlinux'
         shell: bash
         run: |
           set -euo pipefail
@@ -85,6 +94,26 @@ jobs:
           ! sudo systemctl is-active --quiet octelium-desktop-daemon.service
           test ! -e /usr/bin/octelium-desktop-daemon
           test ! -e /usr/lib/systemd/system/octelium-desktop-daemon.service
+      - name: Validate Arch Linux package
+        if: matrix.package == 'archlinux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y libarchive-tools zstd
+          package="$(find artifact -type f -name '*.pkg.tar.zst' -print -quit)"
+          [[ -n "$package" ]]
+          bsdtar -tf "$package" > package-files
+          grep -Fxq .PKGINFO package-files
+          grep -Fxq .BUILDINFO package-files
+          grep -Fxq .MTREE package-files
+          grep -Fxq .INSTALL package-files
+          grep -Fxq usr/bin/octelium-desktop package-files
+          grep -Fxq usr/bin/octelium-desktop-daemon package-files
+          grep -Fxq usr/lib/systemd/system/octelium-desktop-daemon.service package-files
+          bsdtar -xOf "$package" .PKGINFO > package-info
+          grep -Fxq 'pkgname = octelium-desktop' package-info
+          grep -Fxq 'arch = ${{ matrix.package_arch }}' package-info
 
   macos:
     name: macOS ${{ matrix.arch }} PKG

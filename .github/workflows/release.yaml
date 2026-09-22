@@ -49,6 +49,7 @@ jobs:
           - runner: ubuntu-22.04
             os: linux
             arch: amd64
+            package_arch: x86_64
             target: x86_64-unknown-linux-gnu
             bundle_config: src-tauri/tauri.bundle.conf.json
             bundles: deb,rpm,appimage
@@ -58,6 +59,7 @@ jobs:
           - runner: ubuntu-24.04-arm
             os: linux
             arch: arm64
+            package_arch: aarch64
             target: aarch64-unknown-linux-gnu
             bundle_config: src-tauri/tauri.bundle.conf.json
             bundles: deb,rpm,appimage
@@ -69,7 +71,7 @@ jobs:
             arch: amd64
             target: x86_64-apple-darwin
             bundle_config: src-tauri/tauri.bundle.conf.json
-            bundles: app,dmg
+            bundles: app
             upgrade_bundles: app
             archive: tar.gz
             executable: octelium-desktop
@@ -78,7 +80,7 @@ jobs:
             arch: arm64
             target: aarch64-apple-darwin
             bundle_config: src-tauri/tauri.bundle.conf.json
-            bundles: app,dmg
+            bundles: app
             upgrade_bundles: app
             archive: tar.gz
             executable: octelium-desktop
@@ -122,7 +124,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libfuse2 patchelf rpm xdg-utils
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libarchive-tools libfuse2 patchelf rpm xdg-utils zstd
       - run: npm ci
       - name: Download Octelium CLI
         env:
@@ -194,6 +196,20 @@ jobs:
             "$version" \
             "${{ matrix.arch }}" \
             "$target/bundle/pkg/Octelium_${version}_${{ matrix.arch }}.pkg"
+      - name: Build Arch Linux package
+        if: matrix.os == 'linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(node -p 'require("./package.json").version')"
+          target="src-tauri/target/${{ matrix.target }}/release"
+          package="$(find "$target/bundle/deb" -type f -name '*.deb' -print -quit)"
+          [[ -n "$package" ]]
+          src-tauri/installer/archlinux/build-package.sh \
+            "$package" \
+            "$version" \
+            "${{ matrix.package_arch }}" \
+            "$target/bundle/archlinux/octelium-desktop-${version}-1-${{ matrix.package_arch }}.pkg.tar.zst"
       - name: Collect artifacts
         shell: bash
         run: |
@@ -205,7 +221,7 @@ jobs:
           cp "$target/${{ matrix.executable }}" "$output/octelium-desktop-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }}"
           while IFS= read -r -d '' file; do
             cp "$file" "$output/octelium-desktop-${{ matrix.os }}-${{ matrix.arch }}-$(basename "$file")"
-          done < <(find "$target/bundle" -type f \( -name '*.deb' -o -name '*.rpm' -o -name '*.AppImage' -o -name '*.dmg' -o -name '*.msi' -o -name '*.pkg' -o -name '*-setup.exe' \) -print0)
+          done < <(find "$target/bundle" -type f \( -name '*.deb' -o -name '*.rpm' -o -name '*.AppImage' -o -name '*.pkg.tar.zst' -o -name '*.msi' -o -name '*.pkg' -o -name '*-setup.exe' \) -print0)
           cp "octelium-cli/octelium-${{ matrix.os }}-${{ matrix.arch }}.${{ matrix.archive }}" "$output/"
           cp octelium-cli/VERSION "$output/OCTELIUM_CLI_VERSION-${{ matrix.os }}-${{ matrix.arch }}"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
