@@ -17,6 +17,7 @@ export type TrayDomain = {
 export type TraySummary = {
   available: boolean;
   domains: TrayDomain[];
+  dark: boolean;
 };
 
 export const isNative = (): boolean => isTauri();

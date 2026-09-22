@@ -19,20 +19,27 @@ const OUT_DIR = join(ROOT, "src-tauri", "icons", "tray");
 
 const GRID = 16;
 const INSET = 0.3;
-const BLADE_WEIGHT = 2;
-
 const BADGE = { x: 12.5, y: 12.5, r: 2.8, gap: 4.15 };
 
-const TONES = {
-  mark: "#71717A",
-  connected: "#16A34A",
-  signedOut: "#64748B",
-};
+const SCHEMES = [
+  {
+    name: "light",
+    mark: "#000000",
+    connected: "#16A34A",
+    signedOut: "#64748B",
+  },
+  {
+    name: "dark",
+    mark: "#FFFFFF",
+    connected: "#22C55E",
+    signedOut: "#A1A1AA",
+  },
+];
 
 const ICONS = [
   { name: "logo" },
-  { name: "connected", badge: TONES.connected },
-  { name: "signed-out", badge: TONES.signedOut },
+  { name: "connected", badge: "connected" },
+  { name: "signed-out", badge: "signedOut" },
 ];
 
 const TARGETS = [
@@ -58,9 +65,9 @@ const readMark = () => {
 const mark = readMark();
 const scale = Number(((GRID - 2 * INSET) / mark.size).toFixed(8));
 
-const blades = () => {
+const blades = (scheme) => {
   const drawn = mark.blades.map((d) => `<path d="${d}"/>`).join("");
-  return `<g transform="translate(${INSET} ${INSET}) scale(${scale})" fill="currentColor" stroke="currentColor" stroke-width="${BLADE_WEIGHT}" stroke-linejoin="round">${drawn}</g>`;
+  return `<g transform="translate(${INSET} ${INSET}) scale(${scale})" fill="${scheme.mark}">${drawn}</g>`;
 };
 
 const overlay = (
@@ -74,18 +81,18 @@ ${cut}
 <g mask="url(#cut)">${body}</g>
 ${draw}`;
 
-const render = (icon) => {
-  let body = blades();
+const render = (icon, scheme) => {
+  let body = blades(scheme);
 
   if (icon.badge) {
     body = overlay(
       body,
       `<circle cx="${BADGE.x}" cy="${BADGE.y}" r="${BADGE.gap}" fill="#000"/>`,
-      `<circle cx="${BADGE.x}" cy="${BADGE.y}" r="${BADGE.r}" fill="${icon.badge}"/>`,
+      `<circle cx="${BADGE.x}" cy="${BADGE.y}" r="${BADGE.r}" fill="${scheme[icon.badge]}"/>`,
     );
   }
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${GRID}" height="${GRID}" viewBox="0 0 ${GRID} ${GRID}" color="${TONES.mark}">${body}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${GRID}" height="${GRID}" viewBox="0 0 ${GRID} ${GRID}">${body}</svg>`;
 };
 
 const main = () => {
@@ -95,22 +102,24 @@ const main = () => {
     const dir = join(OUT_DIR, target.dir);
     mkdirSync(dir, { recursive: true });
 
-    for (const icon of ICONS) {
-      const source = join(scratch, `${target.dir}-${icon.name}.svg`);
-      writeFileSync(source, render(icon));
-      execFileSync("rsvg-convert", [
-        "-w",
-        String(target.size),
-        "-h",
-        String(target.size),
-        source,
-        "-o",
-        join(dir, `${icon.name}.png`),
-      ]);
+    for (const scheme of SCHEMES) {
+      for (const icon of ICONS) {
+        const source = join(scratch, `${target.dir}-${scheme.name}-${icon.name}.svg`);
+        writeFileSync(source, render(icon, scheme));
+        execFileSync("rsvg-convert", [
+          "-w",
+          String(target.size),
+          "-h",
+          String(target.size),
+          source,
+          "-o",
+          join(dir, `${icon.name}-${scheme.name}.png`),
+        ]);
+      }
     }
 
     process.stdout.write(
-      `Generated ${ICONS.length} ${target.size}px icons into icons/tray/${target.dir}\n`,
+      `Generated ${ICONS.length * SCHEMES.length} ${target.size}px icons into icons/tray/${target.dir}\n`,
     );
   }
 

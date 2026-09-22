@@ -16,8 +16,13 @@ type TrayAction = {
   path?: string;
 };
 
-const getTraySummary = (available: boolean, status?: GetStatusResponse) => ({
+const getTraySummary = (
+  available: boolean,
+  dark: boolean,
+  status?: GetStatusResponse,
+) => ({
   available,
+  dark,
   domains: (status?.domains ?? []).map((itm) => ({
     domain: itm.domain,
     connected: isConnected(itm),
@@ -41,6 +46,7 @@ export const useNativeIntegration = () => {
     (state) => state.prefs.prefs.startMinimized,
   );
   const isLoaded = useAppSelector((state) => state.prefs.isLoaded);
+  const prefersDark = useAppSelector((state) => state.prefs.prefersDark);
 
   const selectedRef = useRef(selected);
   const closeToTrayRef = useRef(closeToTray);
@@ -101,7 +107,11 @@ export const useNativeIntegration = () => {
       return;
     }
 
-    const summary = getTraySummary(availability === "available", status);
+    const summary = getTraySummary(
+      availability === "available",
+      prefersDark,
+      status,
+    );
     if (selected) {
       summary.domains = summary.domains.filter(
         (item) => item.domain === selected,
@@ -120,7 +130,7 @@ export const useNativeIntegration = () => {
       summary.domains = summary.domains.slice(0, 1);
     }
     void updateTray(summary).catch(() => {});
-  }, [availability, selected, status]);
+  }, [availability, prefersDark, selected, status]);
 
   useEffect(() => {
     if (!isNative()) {

@@ -13,11 +13,18 @@ pub const TRAY_ID: &str = "octelium";
 macro_rules! tray_art {
     ($dir:literal) => {
         mod art {
-            pub const LOGO: &[u8] = include_bytes!(concat!("../icons/tray/", $dir, "/logo.png"));
-            pub const CONNECTED: &[u8] =
-                include_bytes!(concat!("../icons/tray/", $dir, "/connected.png"));
-            pub const SIGNED_OUT: &[u8] =
-                include_bytes!(concat!("../icons/tray/", $dir, "/signed-out.png"));
+            pub const LOGO_LIGHT: &[u8] =
+                include_bytes!(concat!("../icons/tray/", $dir, "/logo-light.png"));
+            pub const LOGO_DARK: &[u8] =
+                include_bytes!(concat!("../icons/tray/", $dir, "/logo-dark.png"));
+            pub const CONNECTED_LIGHT: &[u8] =
+                include_bytes!(concat!("../icons/tray/", $dir, "/connected-light.png"));
+            pub const CONNECTED_DARK: &[u8] =
+                include_bytes!(concat!("../icons/tray/", $dir, "/connected-dark.png"));
+            pub const SIGNED_OUT_LIGHT: &[u8] =
+                include_bytes!(concat!("../icons/tray/", $dir, "/signed-out-light.png"));
+            pub const SIGNED_OUT_DARK: &[u8] =
+                include_bytes!(concat!("../icons/tray/", $dir, "/signed-out-dark.png"));
         }
     };
 }
@@ -51,6 +58,7 @@ pub struct TrayDomain {
 pub struct TraySummary {
     pub available: bool,
     pub domains: Vec<TrayDomain>,
+    pub dark: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -70,12 +78,30 @@ enum Status {
     Connected,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Appearance {
+    Light,
+    Dark,
+}
+
 struct TrayState<R: Runtime> {
     status: MenuItem<R>,
     connect: MenuItem<R>,
     disconnect: MenuItem<R>,
     domain: Mutex<Option<String>>,
-    painted: Mutex<Status>,
+    painted: Mutex<(Status, Appearance)>,
+}
+
+fn get_system_appearance<R: Runtime>(app: &AppHandle<R>) -> Appearance {
+    let theme = app
+        .get_webview_window(window::MAIN_WINDOW)
+        .and_then(|window| window.theme().ok())
+        .unwrap_or(tauri::Theme::Light);
+
+    match theme {
+        tauri::Theme::Dark => Appearance::Dark,
+        _ => Appearance::Light,
+    }
 }
 
 pub fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<TrayIcon<R>> {
@@ -101,16 +127,18 @@ pub fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<TrayIcon<R>> {
         .item(&MenuItemBuilder::with_id(MENU_QUIT, "Quit Octelium").build(app)?)
         .build()?;
 
+    let appearance = get_system_appearance(app);
+
     app.manage(TrayState {
         status,
         connect,
         disconnect,
         domain: Mutex::new(None),
-        painted: Mutex::new(Status::Unavailable),
+        painted: Mutex::new((Status::Unavailable, appearance)),
     });
 
     let builder = TrayIconBuilder::with_id(TRAY_ID)
-        .icon(Image::from_bytes(get_icon(Status::Unavailable))?)
+        .icon(Image::from_bytes(get_icon(Status::Unavailable, appearance))?)
         .icon_as_template(false)
         .menu(&menu)
         .on_tray_icon_event(|tray, event| {
@@ -148,12 +176,18 @@ pub fn update<R: Runtime>(app: &AppHandle<R>, summary: &TraySummary) -> tauri::R
     }
 
     let status = get_status(summary);
-    if *state.painted.lock().unwrap() == status {
+    let appearance = if summary.dark {
+        Appearance::Dark
+    } else {
+        Appearance::Light
+    };
+    let painted = (status, appearance);
+    if *state.painted.lock().unwrap() == painted {
         return Ok(());
     }
 
-    set_icon(app, get_icon(status))?;
-    *state.painted.lock().unwrap() = status;
+    set_icon(app, get_icon(status, appearance))?;
+    *state.painted.lock().unwrap() = painted;
 
     Ok(())
 }
@@ -179,11 +213,14 @@ fn get_status(summary: &TraySummary) -> Status {
     }
 }
 
-fn get_icon(status: Status) -> &'static [u8] {
-    match status {
-        Status::SignedOut => art::SIGNED_OUT,
-        Status::Connected => art::CONNECTED,
-        Status::Unavailable | Status::Disconnected | Status::Busy => art::LOGO,
+fn get_icon(status: Status, appearance: Appearance) -> &'static [u8] {
+    match (status, appearance) {
+        (Status::SignedOut, Appearance::Light) => art::SIGNED_OUT_LIGHT,
+        (Status::SignedOut, Appearance::Dark) => art::SIGNED_OUT_DARK,
+        (Status::Connected, Appearance::Light) => art::CONNECTED_LIGHT,
+        (Status::Connected, Appearance::Dark) => art::CONNECTED_DARK,
+        (_, Appearance::Light) => art::LOGO_LIGHT,
+        (_, Appearance::Dark) => art::LOGO_DARK,
     }
 }
 
@@ -251,6 +288,7 @@ mod tests {
     fn summary(available: bool, domain: Option<TrayDomain>) -> TraySummary {
         TraySummary {
             available,
+            dark: false,
             domains: domain.into_iter().collect(),
         }
     }
@@ -308,10 +346,22 @@ mod tests {
 
     #[test]
     fn test_status_artwork() {
-        assert_eq!(get_icon(Status::Unavailable), art::LOGO);
-        assert_eq!(get_icon(Status::Disconnected), art::LOGO);
-        assert_eq!(get_icon(Status::Busy), art::LOGO);
-        assert_eq!(get_icon(Status::SignedOut), art::SIGNED_OUT);
-        assert_eq!(get_icon(Status::Connected), art::CONNECTED);
+        assert_eq!(
+            get_icon(Status::Unavailable, Appearance::Light),
+            art::LOGO_LIGHT
+        );
+        assert_eq!(
+            get_icon(Status::Disconnected, Appearance::Dark),
+            art::LOGO_DARK
+        );
+        assert_eq!(get_icon(Status::Busy, Appearance::Light), art::LOGO_LIGHT);
+        assert_eq!(
+            get_icon(Status::SignedOut, Appearance::Dark),
+            art::SIGNED_OUT_DARK
+        );
+        assert_eq!(
+            get_icon(Status::Connected, Appearance::Light),
+            art::CONNECTED_LIGHT
+        );
     }
 }

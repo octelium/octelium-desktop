@@ -15,9 +15,8 @@ Homebrew) on the `PATH`.
 
 The blades are read straight out of [`src/assets/mark.svg`](../../../src/assets/mark.svg)
 at generation time, so the tray always follows the brand mark and there is no
-second copy of the geometry to keep in sync. The only liberty taken is a
-2-unit stroke on the blades, which gives back the weight that is otherwise lost
-once the shell scales the icon down to 16px.
+second copy of the geometry to keep in sync. No outline or additional geometry
+is added to the mark.
 
 State is shown with a small badge in the lower-right corner. Everything is
 layered over the mark, so the mark itself is never redrawn:
@@ -33,9 +32,11 @@ readable at small sizes.
 
 ## Light and dark
 
-All three platforms use the same mid-tone mark, which remains visible against
-both light and dark system panels. The badges keep their state colours on every
-platform instead of relying on system template recolouring.
+Every platform has a light-panel set with a black mark and a dark-panel set
+with a white mark. The application selects the system appearance at startup
+and repaints the tray whenever that preference changes. The badges keep their
+state colours on every platform instead of relying on system template
+recolouring.
 
 ## Sizes
 
