@@ -6,11 +6,16 @@ mod window;
 use octelium_grpc::Client;
 use tauri::Manager;
 use tauri_plugin_autostart::MacosLauncher;
+use tauri_plugin_window_state::StateFlags;
 
 use state::AppState;
 
 fn get_user_agent(version: &str) -> String {
     format!("octelium-desktop/{version}")
+}
+
+fn get_window_state_flags() -> StateFlags {
+    StateFlags::all() & !StateFlags::VISIBLE
 }
 
 pub fn run() {
@@ -28,7 +33,11 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
-        .plugin(tauri_plugin_window_state::Builder::new().build())
+        .plugin(
+            tauri_plugin_window_state::Builder::new()
+                .with_state_flags(get_window_state_flags())
+                .build(),
+        )
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
             None,
@@ -75,5 +84,14 @@ mod tests {
     #[test]
     fn test_get_user_agent() {
         assert_eq!(get_user_agent("0.1.0"), "octelium-desktop/0.1.0");
+    }
+
+    #[test]
+    fn test_get_window_state_flags() {
+        let flags = get_window_state_flags();
+
+        assert!(!flags.contains(StateFlags::VISIBLE));
+        assert!(flags.contains(StateFlags::SIZE));
+        assert!(flags.contains(StateFlags::POSITION));
     }
 }
