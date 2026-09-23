@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Octelium Desktop",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "identifier": "com.octelium.desktop",
   "mainBinaryName": "octelium-desktop",
   "build": {

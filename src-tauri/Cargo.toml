@@ -1,6 +1,6 @@
 [package]
 name = "octelium-desktop"
-version = "0.2.3"
+version = "0.2.4"
 description = "The Octelium desktop application"
 authors = ["Octelium Labs, LLC"]
 license = "Apache-2.0"
