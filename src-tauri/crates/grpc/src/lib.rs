@@ -32,6 +32,8 @@ pub enum Target {
 struct GetAPICredentialRequest {
     #[prost(string, tag = "1")]
     domain: String,
+    #[prost(bool, tag = "2")]
+    renew: bool,
 }
 
 #[derive(Clone, PartialEq, prost::Message)]
@@ -62,6 +64,10 @@ impl Credential {
             Some(expires_at) => SystemTime::now() + CREDENTIAL_EXPIRY_MARGIN < expires_at,
             None => true,
         }
+    }
+
+    fn is_rejected(&self, rejected: Option<&str>) -> bool {
+        rejected == Some(self.access_token.as_str())
     }
 }
 
@@ -106,7 +112,7 @@ impl Client {
                 let channel = self.get_cluster_channel(domain).await?;
 
                 let mut req = Request::new(request.clone());
-                self.set_authorization(&mut req, domain, false).await?;
+                let access_token = self.set_authorization(&mut req, domain, None).await?;
 
                 let mut c = Grpc::new(channel.clone());
                 c.ready()
@@ -125,7 +131,8 @@ impl Client {
                 }
 
                 let mut req = Request::new(request);
-                self.set_authorization(&mut req, domain, true).await?;
+                self.set_authorization(&mut req, domain, Some(&access_token))
+                    .await?;
 
                 let mut c = Grpc::new(channel);
                 c.ready()
@@ -152,7 +159,7 @@ impl Client {
                 let domain = get_domain(domain)?;
                 let channel = self.get_cluster_channel(domain).await?;
                 let mut req = Request::new(request);
-                self.set_authorization(&mut req, domain, false).await?;
+                self.set_authorization(&mut req, domain, None).await?;
                 (channel, req)
             }
         };
@@ -230,9 +237,9 @@ impl Client {
         &self,
         request: &mut Request<T>,
         domain: &str,
-        renew: bool,
-    ) -> Result<(), Error> {
-        let credential = self.get_credential(domain, renew).await?;
+        rejected: Option<&str>,
+    ) -> Result<String, Error> {
+        let credential = self.get_credential(domain, rejected).await?;
 
         let value = credential
             .access_token
@@ -241,22 +248,36 @@ impl Client {
 
         request.metadata_mut().insert(AUTH_METADATA_KEY, value);
 
-        Ok(())
+        Ok(credential.access_token)
     }
 
-    async fn get_credential(&self, domain: &str, renew: bool) -> Result<Credential, Error> {
+    async fn get_credential(
+        &self,
+        domain: &str,
+        rejected: Option<&str>,
+    ) -> Result<Credential, Error> {
         let mut credentials = self.credentials.lock().await;
 
-        if !renew {
-            if let Some(ret) = credentials.get(domain) {
-                if ret.is_usable() {
-                    return Ok(ret.clone());
-                }
+        if let Some(ret) = credentials.get(domain) {
+            if ret.is_usable() && !ret.is_rejected(rejected) {
+                return Ok(ret.clone());
             }
         }
 
+        let mut ret = self.fetch_credential(domain, false).await?;
+        if ret.is_rejected(rejected) {
+            ret = self.fetch_credential(domain, true).await?;
+        }
+
+        credentials.insert(domain.to_string(), ret.clone());
+
+        Ok(ret)
+    }
+
+    async fn fetch_credential(&self, domain: &str, renew: bool) -> Result<Credential, Error> {
         let request = GetAPICredentialRequest {
             domain: domain.to_string(),
+            renew,
         };
 
         let path = method::validate_method(GET_API_CREDENTIAL, DAEMON_SERVICES)
@@ -276,14 +297,10 @@ impl Client {
             ));
         }
 
-        let ret = Credential {
+        Ok(Credential {
             access_token: ret.access_token,
             expires_at: ret.expires_at.and_then(get_system_time),
-        };
-
-        credentials.insert(domain.to_string(), ret.clone());
-
-        Ok(ret)
+        })
     }
 }
 
@@ -403,6 +420,36 @@ mod tests {
                 expires_at: Some(SystemTime::now() - Duration::from_secs(5)),
             };
             assert!(!ret.is_usable());
+        }
+    }
+
+    #[test]
+    fn test_credential_is_rejected() {
+        let ret = Credential {
+            access_token: "token".to_string(),
+            expires_at: None,
+        };
+
+        assert!(ret.is_rejected(Some("token")));
+        assert!(!ret.is_rejected(Some("other")));
+        assert!(!ret.is_rejected(None));
+    }
+
+    #[test]
+    fn test_get_api_credential_request() {
+        {
+            let ret = prost::Message::encode_to_vec(&GetAPICredentialRequest {
+                domain: "example.com".to_string(),
+                renew: false,
+            });
+            assert_eq!(ret, b"\x0a\x0bexample.com".to_vec());
+        }
+        {
+            let ret = prost::Message::encode_to_vec(&GetAPICredentialRequest {
+                domain: "example.com".to_string(),
+                renew: true,
+            });
+            assert_eq!(ret, b"\x0a\x0bexample.com\x10\x01".to_vec());
         }
     }
 

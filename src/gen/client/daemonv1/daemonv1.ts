@@ -813,6 +813,10 @@ export interface GetAPICredentialRequest {
      * @generated from protobuf field: string domain = 1
      */
     domain: string;
+    /**
+     * @generated from protobuf field: bool renew = 2
+     */
+    renew: boolean;
 }
 /**
  * @generated from protobuf message octelium.api.client.daemon.v1.GetAPICredentialResponse
@@ -2567,12 +2571,14 @@ export const CancelOperationRequest = new CancelOperationRequest$Type();
 class GetAPICredentialRequest$Type extends MessageType<GetAPICredentialRequest> {
     constructor() {
         super("octelium.api.client.daemon.v1.GetAPICredentialRequest", [
-            { no: 1, name: "domain", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+            { no: 1, name: "domain", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "renew", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
         ]);
     }
     create(value?: PartialMessage<GetAPICredentialRequest>): GetAPICredentialRequest {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.domain = "";
+        message.renew = false;
         if (value !== undefined)
             reflectionMergePartial<GetAPICredentialRequest>(this, message, value);
         return message;
@@ -2584,6 +2590,9 @@ class GetAPICredentialRequest$Type extends MessageType<GetAPICredentialRequest> 
             switch (fieldNo) {
                 case /* string domain */ 1:
                     message.domain = reader.string();
+                    break;
+                case /* bool renew */ 2:
+                    message.renew = reader.bool();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -2600,6 +2609,9 @@ class GetAPICredentialRequest$Type extends MessageType<GetAPICredentialRequest> 
         /* string domain = 1; */
         if (message.domain !== "")
             writer.tag(1, WireType.LengthDelimited).string(message.domain);
+        /* bool renew = 2; */
+        if (message.renew !== false)
+            writer.tag(2, WireType.Varint).bool(message.renew);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
