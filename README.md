@@ -11,8 +11,8 @@ Native app screenshots with `example.com` demo data.
 | [![Sign in](unsorted/login-light.png)](unsorted/login-light.png) | [![Connection](unsorted/connection-light.png)](unsorted/connection-light.png) |
 | **Services** | **Settings** |
 | [![Services](unsorted/services-light.png)](unsorted/services-light.png) | [![Settings](unsorted/settings-application-light.png)](unsorted/settings-application-light.png) |
-
-[More screenshots](unsorted/README.md).
+| **Sign in (dark)** | **Services (dark)** |
+| [![Sign in in the dark theme](unsorted/login-token-dark.png)](unsorted/login-token-dark.png) | [![Services in the dark theme](unsorted/services-dark.png)](unsorted/services-dark.png) |
 
 ## Download
 
