@@ -1,7 +1,12 @@
 import { connect, disconnect } from "@/features/daemon/actions";
 import type { GetStatusResponse } from "@/gen/client/daemonv1";
 import { ConnectionStatus_State } from "@/gen/client/daemonv1";
-import { isConnectionBusy, isAuthenticated, isConnected } from "@/utils/daemon";
+import {
+  getConnectionStateLabel,
+  isConnectionBusy,
+  isAuthenticated,
+  isConnected,
+} from "@/utils/daemon";
 import { useAppSelector } from "@/utils/hooks";
 import { getAppInfo, isNative, notify, showWindow, updateTray } from "@/utils/native";
 import { listen } from "@tauri-apps/api/event";
@@ -28,6 +33,7 @@ const getTraySummary = (
     connected: isConnected(itm),
     busy: isConnectionBusy(itm),
     authenticated: isAuthenticated(itm),
+    state: getConnectionStateLabel(itm.connection?.state),
   })),
 });
 
@@ -123,6 +129,7 @@ export const useNativeIntegration = () => {
             connected: false,
             busy: false,
             authenticated: false,
+            state: getConnectionStateLabel(),
           },
         ];
       }

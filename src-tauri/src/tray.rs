@@ -51,6 +51,7 @@ pub struct TrayDomain {
     pub connected: bool,
     pub busy: bool,
     pub authenticated: bool,
+    pub state: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -234,7 +235,7 @@ fn get_status_label(summary: &TraySummary) -> String {
 
     match summary.domains.first() {
         None => "No Cluster configured".to_string(),
-        Some(domain) if domain.busy => format!("{} — Working", domain.domain),
+        Some(domain) if domain.busy => format!("{} — {}", domain.domain, domain.state),
         Some(domain) if domain.connected => format!("{} — Connected", domain.domain),
         Some(domain) if domain.authenticated => format!("{} — Disconnected", domain.domain),
         Some(domain) => format!("{} — Signed out", domain.domain),
@@ -302,6 +303,7 @@ mod tests {
             connected,
             busy,
             authenticated,
+            state: "Reconnecting".to_string(),
         }
     }
 
@@ -318,6 +320,10 @@ mod tests {
         assert_eq!(
             get_status_label(&summary(true, Some(domain(true, false, true)))),
             "example.com — Connected"
+        );
+        assert_eq!(
+            get_status_label(&summary(true, Some(domain(false, true, true)))),
+            "example.com — Reconnecting"
         );
     }
 

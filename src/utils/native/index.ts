@@ -12,6 +12,7 @@ export type TrayDomain = {
   connected: boolean;
   busy: boolean;
   authenticated: boolean;
+  state: string;
 };
 
 export type TraySummary = {
