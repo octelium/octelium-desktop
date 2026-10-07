@@ -1,18 +1,22 @@
-import type { Error as DaemonError } from "@/gen/client/daemonv1";
+import { Error_Code, type Error as DaemonError } from "@/gen/client/daemonv1";
 import { getErrorHint, getErrorTitle, isErrorRetryable } from "@/utils/daemon";
 import { Alert, Button } from "@mantine/core";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { AlertTriangle, LogIn, RefreshCw } from "lucide-react";
 
 const ErrorBanner = (props: {
   error?: DaemonError;
   onRetry?: () => void;
+  onSignIn?: () => void;
   isPending?: boolean;
+  disabled?: boolean;
 }) => {
   if (!props.error) {
     return null;
   }
 
   const hint = getErrorHint(props.error);
+  const signIn =
+    props.error.code === Error_Code.AUTHENTICATION_REQUIRED && props.onSignIn;
 
   return (
     <Alert
@@ -29,17 +33,24 @@ const ErrorBanner = (props: {
             {props.error.message}
           </span>
         )}
-        {props.onRetry && isErrorRetryable(props.error) && (
+        {(signIn || (props.onRetry && isErrorRetryable(props.error))) && (
           <div>
             <Button
               color="red"
               size="xs"
               variant="outline"
               loading={props.isPending}
-              leftSection={<RefreshCw size={14} aria-hidden />}
-              onClick={props.onRetry}
+              disabled={props.disabled}
+              leftSection={
+                signIn ? (
+                  <LogIn size={14} aria-hidden />
+                ) : (
+                  <RefreshCw size={14} aria-hidden />
+                )
+              }
+              onClick={signIn || props.onRetry}
             >
-              Try again
+              {signIn ? "Sign in again" : "Try again"}
             </Button>
           </div>
         )}

@@ -1,10 +1,7 @@
-import ConfirmModal from "@/components/ConfirmModal";
 import DomainSwitcher from "@/components/DomainSwitcher";
-import { logout, getErrorMessage } from "@/features/daemon/actions";
 import { useDomainState } from "@/features/daemon/hooks";
 import { isAuthenticated } from "@/utils/daemon";
 import { useAppSelector } from "@/utils/hooks";
-import { useMutation } from "@tanstack/react-query";
 import {
   Activity,
   LogIn,
@@ -12,18 +9,15 @@ import {
   PanelTop,
   Settings as SettingsIcon,
 } from "lucide-react";
-import { useState } from "react";
 import { NavLink } from "react-router-dom";
 
-export default function Sidebar(props: { onNavigate?: () => void }) {
+export default function Sidebar(props: {
+  onNavigate?: () => void;
+  onSignOut: (domain: string) => void;
+}) {
   const domain = useAppSelector((state) => state.daemon.selectedDomain);
   const state = useDomainState(domain);
   const authenticated = isAuthenticated(state);
-  const [confirmLogout, setConfirmLogout] = useState(false);
-  const mutation = useMutation({
-    mutationFn: () => logout(domain!),
-    onSuccess: () => setConfirmLogout(false),
-  });
 
   const items = [
     {
@@ -70,7 +64,7 @@ export default function Sidebar(props: { onNavigate?: () => void }) {
           <button
             type="button"
             className="flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-bold text-muted transition-colors hover:bg-surface-3 hover:text-strong"
-            onClick={() => setConfirmLogout(true)}
+            onClick={() => props.onSignOut(domain)}
           >
             <LogOut size={15} aria-hidden />
             Sign out
@@ -84,20 +78,6 @@ export default function Sidebar(props: { onNavigate?: () => void }) {
           Diagnostics
         </NavLink>
       </div>
-
-      <ConfirmModal
-        opened={confirmLogout}
-        onClose={() => setConfirmLogout(false)}
-        onConfirm={() => mutation.mutate()}
-        title="Sign out"
-        confirmLabel="Sign out"
-        isPending={mutation.isPending}
-        error={mutation.isError ? getErrorMessage(mutation.error) : undefined}
-      >
-        Signing out of <strong>{domain}</strong> disconnects the Cluster,
-        invalidates the Session and removes the stored credentials of this
-        machine.
-      </ConfirmModal>
     </div>
   );
 }

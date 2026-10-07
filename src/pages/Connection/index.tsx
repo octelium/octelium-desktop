@@ -6,8 +6,14 @@ import PageHeader from "@/components/PageHeader";
 import StatusDot from "@/components/StatusDot";
 import TimeAgo from "@/components/TimeAgo";
 import CopyText from "@/components/CopyText";
-import { connect, disconnect, getErrorMessage } from "@/features/daemon/actions";
+import {
+  authenticateBrowser,
+  connect,
+  disconnect,
+  getErrorMessage,
+} from "@/features/daemon/actions";
 import { useDomainState } from "@/features/daemon/hooks";
+import { Error_Code } from "@/gen/client/daemonv1";
 import { getClientUser } from "@/utils/client";
 import { printDuration, toRFC3339 } from "@/utils";
 import {
@@ -19,12 +25,15 @@ import {
   getConnectionStateTone,
   getDNSModeLabel,
   getImplementationModeLabel,
+  getPendingOpenURL,
   getTunnelModeLabel,
   isAuthenticated,
   isConnected,
   isConnectionBusy,
+  isOperationActive,
 } from "@/utils/daemon";
 import { useAppSelector } from "@/utils/hooks";
+import { openExternal } from "@/utils/native";
 import { Button } from "@mantine/core";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Plug, PlugZap, ShieldCheck } from "lucide-react";
@@ -69,6 +78,16 @@ const Connection = () => {
     },
   });
 
+  const mutationAuth = useMutation({
+    mutationFn: async () => {
+      const operation = await authenticateBrowser(domain!);
+      const url = getPendingOpenURL({ domain: domain!, lastOperation: operation });
+      if (url) {
+        await openExternal(url);
+      }
+    },
+  });
+
   const statusQuery = useQuery({
     queryKey: ["user/getStatus", domain],
     enabled: !!domain && isConnected(state),
@@ -94,8 +113,10 @@ const Connection = () => {
   const connection = state?.connection;
   const busy =
     isConnectionBusy(state) ||
+    isOperationActive(state?.lastOperation) ||
     mutationConnect.isPending ||
-    mutationDisconnect.isPending;
+    mutationDisconnect.isPending ||
+    mutationAuth.isPending;
 
   const addresses = connection?.addresses ?? [];
   const dns = connection?.dns;
@@ -117,8 +138,14 @@ const Connection = () => {
 
       <ErrorBanner
         error={state?.lastError}
-        isPending={mutationConnect.isPending}
+        isPending={
+          state?.lastError?.code === Error_Code.AUTHENTICATION_REQUIRED
+            ? mutationAuth.isPending
+            : mutationConnect.isPending
+        }
+        disabled={busy}
         onRetry={() => mutationConnect.mutate()}
+        onSignIn={() => mutationAuth.mutate()}
       />
 
       <div className="rounded-xl border border-line bg-surface p-6 shadow-xs">
@@ -168,9 +195,13 @@ const Connection = () => {
           </div>
         </div>
 
-        {(mutationConnect.isError || mutationDisconnect.isError) && (
+        {(mutationConnect.isError ||
+          mutationDisconnect.isError ||
+          mutationAuth.isError) && (
           <div className="mt-4 text-sm font-semibold text-rose-600 dark:text-rose-400">
-            {getErrorMessage(mutationConnect.error ?? mutationDisconnect.error)}
+            {getErrorMessage(
+              mutationConnect.error ?? mutationDisconnect.error ?? mutationAuth.error,
+            )}
           </div>
         )}
       </div>

@@ -1,45 +1,24 @@
-import { connect, disconnect } from "@/features/daemon/actions";
-import type { GetStatusResponse } from "@/gen/client/daemonv1";
+import { getErrorMessage } from "@/features/daemon/actions";
+import { useSelectDomain } from "@/features/daemon/hooks";
 import { ConnectionStatus_State } from "@/gen/client/daemonv1";
-import {
-  getConnectionStateLabel,
-  isConnectionBusy,
-  isAuthenticated,
-  isConnected,
-} from "@/utils/daemon";
 import { useAppSelector } from "@/utils/hooks";
 import { getAppInfo, isNative, notify, showWindow, updateTray } from "@/utils/native";
+import {
+  getTraySummary,
+  handleTrayAction,
+  type TrayAction,
+} from "@/utils/native/tray";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { isPermissionGranted } from "@tauri-apps/plugin-notification";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-type TrayAction = {
-  action: "connect" | "disconnect" | "navigate";
-  domain?: string;
-  path?: string;
-};
-
-const getTraySummary = (
-  available: boolean,
-  dark: boolean,
-  status?: GetStatusResponse,
-) => ({
-  available,
-  dark,
-  domains: (status?.domains ?? []).map((itm) => ({
-    domain: itm.domain,
-    connected: isConnected(itm),
-    busy: isConnectionBusy(itm),
-    authenticated: isAuthenticated(itm),
-    state: getConnectionStateLabel(itm.connection?.state),
-  })),
-});
-
-export const useNativeIntegration = () => {
+export const useNativeIntegration = (onSignOut: (domain: string) => void) => {
   const navigate = useNavigate();
+  const selectDomain = useSelectDomain();
   const [platform, setPlatform] = useState<string | undefined>(undefined);
+  const [trayError, setTrayError] = useState<string | undefined>(undefined);
 
   const availability = useAppSelector((state) => state.daemon.availability);
   const status = useAppSelector((state) => state.daemon.status);
@@ -117,25 +96,8 @@ export const useNativeIntegration = () => {
       availability === "available",
       prefersDark,
       status,
+      selected,
     );
-    if (selected) {
-      summary.domains = summary.domains.filter(
-        (item) => item.domain === selected,
-      );
-      if (summary.domains.length === 0) {
-        summary.domains = [
-          {
-            domain: selected,
-            connected: false,
-            busy: false,
-            authenticated: false,
-            state: getConnectionStateLabel(),
-          },
-        ];
-      }
-    } else {
-      summary.domains = summary.domains.slice(0, 1);
-    }
     void updateTray(summary).catch(() => {});
   }, [availability, prefersDark, selected, status]);
 
@@ -145,29 +107,19 @@ export const useNativeIntegration = () => {
     }
 
     const unlisten = listen<TrayAction>("tray-action", (ev) => {
-      const domain = ev.payload.domain ?? selectedRef.current;
-
-      switch (ev.payload.action) {
-        case "connect":
-          if (domain) {
-            void connect(domain).catch(() => {});
-          }
-          return;
-        case "disconnect":
-          if (domain) {
-            void disconnect(domain).catch(() => {});
-          }
-          return;
-        case "navigate":
-          navigate(ev.payload.path ?? "/connection");
-          return;
-      }
+      setTrayError(undefined);
+      void handleTrayAction(ev.payload, {
+        selected: selectedRef.current,
+        selectDomain,
+        navigate,
+        onSignOut,
+      }).catch((error) => setTrayError(getErrorMessage(error)));
     });
 
     return () => {
       void unlisten.then((fn) => fn());
     };
-  }, [navigate]);
+  }, [navigate, onSignOut, selectDomain]);
 
   useEffect(() => {
     if (!status) {
@@ -212,5 +164,5 @@ export const useNativeIntegration = () => {
     }
   }, [notifications, status]);
 
-  return { platform };
+  return { platform, trayError };
 };

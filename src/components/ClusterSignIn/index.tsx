@@ -11,6 +11,7 @@ import {
 import { Operation_State } from "@/gen/client/daemonv1";
 import {
   isConnectionBusy,
+  isOperationActive,
   normalizeDomain,
   validateDomain,
 } from "@/utils/daemon";
@@ -38,7 +39,7 @@ type Props = {
 const ClusterSignIn = (props: Props) => {
   const selectDomain = useSelectDomain();
   const state = useDomainState(props.domain);
-  const busy = isConnectionBusy(state);
+  const busy = isConnectionBusy(state) || isOperationActive(state?.lastOperation);
   const [domainInput, setDomainInput] = useState("");
   const [advanced, setAdvanced] = useState(false);
   const [token, setToken] = useState("");

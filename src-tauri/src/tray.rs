@@ -40,6 +40,8 @@ const MENU_OPEN: &str = "open";
 const MENU_STATUS: &str = "status";
 const MENU_CONNECT: &str = "connect";
 const MENU_DISCONNECT: &str = "disconnect";
+const MENU_SIGN_IN: &str = "sign-in";
+const MENU_SIGN_OUT: &str = "sign-out";
 const MENU_SETTINGS: &str = "settings";
 const MENU_CLUSTERS: &str = "clusters";
 const MENU_QUIT: &str = "quit";
@@ -51,6 +53,7 @@ pub struct TrayDomain {
     pub connected: bool,
     pub busy: bool,
     pub authenticated: bool,
+    pub authentication_required: bool,
     pub state: String,
 }
 
@@ -89,6 +92,8 @@ struct TrayState<R: Runtime> {
     status: MenuItem<R>,
     connect: MenuItem<R>,
     disconnect: MenuItem<R>,
+    sign_in: MenuItem<R>,
+    sign_out: MenuItem<R>,
     domain: Mutex<Option<String>>,
     painted: Mutex<(Status, Appearance)>,
 }
@@ -115,12 +120,20 @@ pub fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<TrayIcon<R>> {
     let disconnect = MenuItemBuilder::with_id(MENU_DISCONNECT, "Disconnect")
         .enabled(false)
         .build(app)?;
+    let sign_in = MenuItemBuilder::with_id(MENU_SIGN_IN, "Sign in…")
+        .enabled(false)
+        .build(app)?;
+    let sign_out = MenuItemBuilder::with_id(MENU_SIGN_OUT, "Sign out…")
+        .enabled(false)
+        .build(app)?;
     let menu = MenuBuilder::new(app)
         .item(&MenuItemBuilder::with_id(MENU_OPEN, "Open Octelium").build(app)?)
         .item(&PredefinedMenuItem::separator(app)?)
         .item(&status)
         .item(&connect)
         .item(&disconnect)
+        .item(&sign_in)
+        .item(&sign_out)
         .item(&PredefinedMenuItem::separator(app)?)
         .item(&MenuItemBuilder::with_id(MENU_SETTINGS, "Settings").build(app)?)
         .item(&MenuItemBuilder::with_id(MENU_CLUSTERS, "Manage Clusters").build(app)?)
@@ -134,6 +147,8 @@ pub fn create<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<TrayIcon<R>> {
         status,
         connect,
         disconnect,
+        sign_in,
+        sign_out,
         domain: Mutex::new(None),
         painted: Mutex::new((Status::Unavailable, appearance)),
     });
@@ -173,6 +188,8 @@ pub fn update<R: Runtime>(app: &AppHandle<R>, summary: &TraySummary) -> tauri::R
     state.disconnect.set_enabled(
         summary.available && domain.is_some_and(|item| item.connected && !item.busy),
     )?;
+    state.sign_in.set_enabled(can_sign_in(summary))?;
+    state.sign_out.set_enabled(can_sign_out(summary))?;
 
     #[cfg(not(target_os = "linux"))]
     if let Some(tray) = app.tray_by_id(TRAY_ID) {
@@ -217,6 +234,22 @@ fn get_status(summary: &TraySummary) -> Status {
     }
 }
 
+fn can_sign_in(summary: &TraySummary) -> bool {
+    summary.available
+        && summary
+            .domains
+            .first()
+            .is_none_or(|item| !item.busy && (!item.authenticated || item.authentication_required))
+}
+
+fn can_sign_out(summary: &TraySummary) -> bool {
+    summary.available
+        && summary
+            .domains
+            .first()
+            .is_some_and(|item| item.authenticated)
+}
+
 fn get_icon(status: Status, appearance: Appearance) -> &'static [u8] {
     match (status, appearance) {
         (Status::SignedOut, Appearance::Light) => art::SIGNED_OUT_LIGHT,
@@ -235,10 +268,10 @@ fn get_status_label(summary: &TraySummary) -> String {
 
     match summary.domains.first() {
         None => "No Cluster configured".to_string(),
-        Some(domain) if domain.busy => format!("{} — {}", domain.domain, domain.state),
-        Some(domain) if domain.connected => format!("{} — Connected", domain.domain),
-        Some(domain) if domain.authenticated => format!("{} — Disconnected", domain.domain),
-        Some(domain) => format!("{} — Signed out", domain.domain),
+        Some(domain) if domain.busy => format!("{} {}", domain.domain, domain.state),
+        Some(domain) if domain.connected => format!("{} Connected", domain.domain),
+        Some(domain) if domain.authenticated => format!("{} Disconnected", domain.domain),
+        Some(domain) => format!("{} Signed out", domain.domain),
     }
 }
 
@@ -277,6 +310,18 @@ fn on_menu_event<R: Runtime>(app: &AppHandle<R>, event: tauri::menu::MenuEvent) 
                 );
             }
         }
+        MENU_SIGN_IN | MENU_SIGN_OUT => {
+            let domain = app.state::<TrayState<R>>().domain.lock().unwrap().clone();
+            window::show(app);
+            emit(
+                app,
+                TrayAction {
+                    action: id.to_string(),
+                    domain,
+                    path: None,
+                },
+            );
+        }
         _ => {}
     }
 }
@@ -303,8 +348,44 @@ mod tests {
             connected,
             busy,
             authenticated,
+            authentication_required: false,
             state: "Reconnecting".to_string(),
         }
+    }
+
+    #[test]
+    fn test_authentication_actions() {
+        assert!(!can_sign_in(&summary(false, None)));
+        assert!(!can_sign_out(&summary(false, None)));
+        assert!(can_sign_in(&summary(true, None)));
+        assert!(!can_sign_out(&summary(true, None)));
+
+        let signed_out = summary(true, Some(domain(false, false, false)));
+        assert!(can_sign_in(&signed_out));
+        assert!(!can_sign_out(&signed_out));
+
+        let signed_in = summary(true, Some(domain(false, false, true)));
+        assert!(!can_sign_in(&signed_in));
+        assert!(can_sign_out(&signed_in));
+
+        let connected = summary(true, Some(domain(true, false, true)));
+        assert!(!can_sign_in(&connected));
+        assert!(can_sign_out(&connected));
+
+        let mut expired = domain(false, false, true);
+        expired.authentication_required = true;
+        assert!(can_sign_in(&summary(true, Some(expired.clone()))));
+        assert!(can_sign_out(&summary(true, Some(expired.clone()))));
+        assert!(!can_sign_in(&summary(false, Some(expired.clone()))));
+        assert!(!can_sign_out(&summary(false, Some(expired.clone()))));
+
+        expired.busy = true;
+        assert!(!can_sign_in(&summary(true, Some(expired.clone()))));
+        assert!(can_sign_out(&summary(true, Some(expired))));
+        assert!(!can_sign_in(&summary(
+            true,
+            Some(domain(false, true, false))
+        )));
     }
 
     #[test]
@@ -319,11 +400,19 @@ mod tests {
         );
         assert_eq!(
             get_status_label(&summary(true, Some(domain(true, false, true)))),
-            "example.com — Connected"
+            "example.com Connected"
         );
         assert_eq!(
             get_status_label(&summary(true, Some(domain(false, true, true)))),
-            "example.com — Reconnecting"
+            "example.com Reconnecting"
+        );
+        assert_eq!(
+            get_status_label(&summary(true, Some(domain(false, false, true)))),
+            "example.com Disconnected"
+        );
+        assert_eq!(
+            get_status_label(&summary(true, Some(domain(false, false, false)))),
+            "example.com Signed out"
         );
     }
 

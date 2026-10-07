@@ -2,6 +2,7 @@ import DaemonUnavailable from "@/components/DaemonUnavailable";
 import Footer from "@/components/Footer";
 import OperationBanner from "@/components/OperationBanner";
 import Sidebar from "@/components/Sidebar";
+import SignOutModal from "@/components/SignOutModal";
 import TopBar from "@/components/TopBar";
 import {
   useDaemonWatch,
@@ -12,14 +13,15 @@ import {
 import { getActiveOperation } from "@/utils/daemon";
 import { useAppSelector } from "@/utils/hooks";
 import { useNativeIntegration } from "@/utils/hooks/native";
-import { AppShell, Burger } from "@mantine/core";
+import { Alert, AppShell, Burger } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 
 const Root = () => {
   const [opened, { toggle, close }] = useDisclosure(false);
   const location = useLocation();
+  const [signOutDomain, setSignOutDomain] = useState<string | undefined>(undefined);
   const availability = useAppSelector((state) => state.daemon.availability);
   const selectedDomain = useAppSelector(
     (state) => state.daemon.selectedDomain,
@@ -32,7 +34,7 @@ const Root = () => {
   useDaemonWatch();
   useSelectedDomain();
   useSessionCacheLifecycle();
-  const { platform } = useNativeIntegration();
+  const { platform, trayError } = useNativeIntegration(setSignOutDomain);
 
   useEffect(() => {
     close();
@@ -66,13 +68,23 @@ const Root = () => {
           </AppShell.Header>
 
           <AppShell.Navbar className="border-line !bg-app" p="md">
-            <Sidebar onNavigate={close} />
+            <Sidebar onNavigate={close} onSignOut={setSignOutDomain} />
           </AppShell.Navbar>
 
           <AppShell.Main className="min-h-screen !bg-transparent">
             {showContent ? (
               <div className="mx-auto flex min-h-[calc(100vh-60px)] w-full max-w-6xl flex-col">
                 <div className="min-w-0 flex-1">
+                  {trayError && (
+                    <Alert
+                      color="red"
+                      radius="md"
+                      className="mb-6"
+                      title="The tray action failed"
+                    >
+                      {trayError}
+                    </Alert>
+                  )}
                   {availability !== "available" && (
                     <DaemonUnavailable compact platform={platform} />
                   )}
@@ -90,6 +102,13 @@ const Root = () => {
             )}
           </AppShell.Main>
         </AppShell>
+        {signOutDomain && (
+          <SignOutModal
+            key={signOutDomain}
+            domain={signOutDomain}
+            onClose={() => setSignOutDomain(undefined)}
+          />
+        )}
       </div>
     </div>
   );
