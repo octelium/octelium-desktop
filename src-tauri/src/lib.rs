@@ -1,5 +1,7 @@
 mod commands;
 mod state;
+#[cfg(target_os = "linux")]
+mod theme;
 mod tray;
 mod window;
 
@@ -43,6 +45,9 @@ pub fn run() {
             None,
         ))
         .setup(|app| {
+            #[cfg(target_os = "linux")]
+            theme::init(app.handle());
+
             let version = app.package_info().version.to_string();
 
             app.manage(AppState::new(Client::new(
@@ -67,6 +72,7 @@ pub fn run() {
             commands::grpc_cancel,
             commands::grpc_invalidate_domain,
             commands::get_app_info,
+            commands::get_system_theme,
             commands::open_external,
             commands::update_tray,
             commands::notify,

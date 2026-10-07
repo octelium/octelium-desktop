@@ -218,6 +218,20 @@ pub async fn get_app_info<R: Runtime>(
 }
 
 #[tauri::command(rename_all = "camelCase")]
+pub async fn get_system_theme<R: Runtime>(app: AppHandle<R>) -> Option<tauri::Theme> {
+    #[cfg(target_os = "linux")]
+    {
+        app.state::<crate::theme::SystemTheme>().get()
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = app;
+        None
+    }
+}
+
+#[tauri::command(rename_all = "camelCase")]
 pub async fn open_external(url: String) -> Result<(), CommandError> {
     let parsed = Url::parse(&url).map_err(|err| CommandError::invalid_argument(err.to_string()))?;
 

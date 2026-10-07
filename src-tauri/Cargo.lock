@@ -2552,6 +2552,7 @@ name = "octelium-desktop"
 version = "0.2.5"
 dependencies = [
  "base64 0.22.1",
+ "dbus",
  "octelium-grpc",
  "serde",
  "serde_json",

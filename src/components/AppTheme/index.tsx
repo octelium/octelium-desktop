@@ -4,6 +4,7 @@ import {
   setPrefsError,
 } from "@/features/prefs/slice";
 import { useAppDispatch, useAppSelector } from "@/utils/hooks";
+import { setNativeTheme, watchSystemTheme } from "@/utils/native/theme";
 import { defaultPrefs, loadPrefs, resolveTheme, savePrefs } from "@/utils/prefs";
 import theme, { cssVariablesResolver } from "@/utils/theme";
 import { MantineProvider } from "@mantine/core";
@@ -29,14 +30,9 @@ const AppTheme = (props: { children?: ReactNode }) => {
   }, [dispatch]);
 
   useEffect(() => {
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = () =>
-      dispatch(setPrefersDark({ prefersDark: media.matches }));
-
-    onChange();
-    media.addEventListener("change", onChange);
-
-    return () => media.removeEventListener("change", onChange);
+    return watchSystemTheme((prefersDark) =>
+      dispatch(setPrefersDark({ prefersDark })),
+    );
   }, [dispatch]);
 
   useEffect(() => {
@@ -59,6 +55,14 @@ const AppTheme = (props: { children?: ReactNode }) => {
   useLayoutEffect(() => {
     document.documentElement.setAttribute("data-theme", scheme);
   }, [scheme]);
+
+  useEffect(() => {
+    if (!isLoaded) {
+      return;
+    }
+
+    void setNativeTheme(prefs.theme, prefersDark).catch(() => {});
+  }, [isLoaded, prefs.theme, prefersDark]);
 
   return (
     <MantineProvider
