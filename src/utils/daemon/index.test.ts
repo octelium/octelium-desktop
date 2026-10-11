@@ -429,6 +429,18 @@ test("getTunnelModeLabel", () => {
 test("getImplementationModeLabel", () => {
   {
     const ret = getImplementationModeLabel(
+      ConnectionOptions_ImplementationMode.KERNEL,
+    );
+    expect(ret).toEqual("Kernel");
+  }
+  {
+    const ret = getImplementationModeLabel(
+      ConnectionOptions_ImplementationMode.TUN,
+    );
+    expect(ret).toEqual("TUN");
+  }
+  {
+    const ret = getImplementationModeLabel(
       ConnectionOptions_ImplementationMode.GVISOR,
     );
     expect(ret).toEqual("gVisor");
@@ -436,6 +448,32 @@ test("getImplementationModeLabel", () => {
   {
     expect(getImplementationModeLabel(undefined)).toEqual("Automatic");
   }
+});
+
+test.each([
+  undefined,
+  ConnectionOptions_ImplementationMode.IMPLEMENTATION_MODE_UNSPECIFIED,
+  ConnectionOptions_ImplementationMode.KERNEL,
+  ConnectionOptions_ImplementationMode.TUN,
+  ConnectionOptions_ImplementationMode.GVISOR,
+])("getImplementationModeLabel uses TUN for QUIC with implementation mode %s", (implementationMode) => {
+  expect(getImplementationModeLabel(
+    implementationMode,
+    ConnectionOptions_TunnelMode.QUICV0,
+  )).toEqual("TUN");
+});
+
+test.each([
+  [undefined, "Kernel"],
+  [ConnectionOptions_ImplementationMode.IMPLEMENTATION_MODE_UNSPECIFIED, "Kernel"],
+  [ConnectionOptions_ImplementationMode.KERNEL, "Kernel"],
+  [ConnectionOptions_ImplementationMode.TUN, "TUN"],
+  [ConnectionOptions_ImplementationMode.GVISOR, "gVisor"],
+] as const)("getImplementationModeLabel uses the WireGuard implementation mode %s", (implementationMode, label) => {
+  expect(getImplementationModeLabel(
+    implementationMode,
+    ConnectionOptions_TunnelMode.WIREGUARD,
+  )).toEqual(label);
 });
 
 test("getDNSModeLabel", () => {

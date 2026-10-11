@@ -13,7 +13,7 @@ import {
   getErrorMessage,
 } from "@/features/daemon/actions";
 import { useDomainState } from "@/features/daemon/hooks";
-import { Error_Code } from "@/gen/client/daemonv1";
+import { ConnectionOptions_L3Mode, Error_Code } from "@/gen/client/daemonv1";
 import { getClientUser } from "@/utils/client";
 import { printDuration, toRFC3339 } from "@/utils";
 import {
@@ -118,7 +118,12 @@ const Connection = () => {
     mutationDisconnect.isPending ||
     mutationAuth.isPending;
 
-  const addresses = connection?.addresses ?? [];
+  const l3Mode = connection?.options?.l3Mode;
+  const showIPv4 = l3Mode !== ConnectionOptions_L3Mode.V6;
+  const showIPv6 = l3Mode !== ConnectionOptions_L3Mode.V4;
+  const addresses = (connection?.addresses ?? []).filter(
+    (itm) => (showIPv4 && itm.v4) || (showIPv6 && itm.v6),
+  );
   const dns = connection?.dns;
 
   return (
@@ -216,7 +221,10 @@ const Connection = () => {
               {getTunnelModeLabel(connection?.tunnelMode)}
             </InfoItem>
             <InfoItem title="Implementation">
-              {getImplementationModeLabel(connection?.implementationMode)}
+              {getImplementationModeLabel(
+                connection?.implementationMode,
+                connection?.tunnelMode,
+              )}
             </InfoItem>
             <InfoItem title="Device">
               <Mono>{connection?.deviceName || "—"}</Mono>
@@ -233,12 +241,12 @@ const Connection = () => {
             {addresses.map((itm, index) => (
               <InfoItem key={index} title="Addresses">
                 <div className="flex flex-col gap-1">
-                  {itm.v4 && (
+                  {showIPv4 && itm.v4 && (
                     <Mono>
                       <CopyText value={itm.v4} />
                     </Mono>
                   )}
-                  {itm.v6 && (
+                  {showIPv6 && itm.v6 && (
                     <Mono>
                       <CopyText value={itm.v6} />
                     </Mono>

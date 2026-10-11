@@ -180,7 +180,12 @@ export const getTunnelModeLabel = (arg?: ConnectionOptions_TunnelMode): string =
 
 export const getImplementationModeLabel = (
   arg?: ConnectionOptions_ImplementationMode,
+  tunnelMode?: ConnectionOptions_TunnelMode,
 ): string => {
+  if (tunnelMode === ConnectionOptions_TunnelMode.QUICV0) {
+    return "TUN";
+  }
+
   switch (arg) {
     case ConnectionOptions_ImplementationMode.KERNEL:
       return "Kernel";
@@ -189,7 +194,9 @@ export const getImplementationModeLabel = (
     case ConnectionOptions_ImplementationMode.GVISOR:
       return "gVisor";
     default:
-      return "Automatic";
+      return tunnelMode === ConnectionOptions_TunnelMode.WIREGUARD
+        ? "Kernel"
+        : "Automatic";
   }
 };
 
