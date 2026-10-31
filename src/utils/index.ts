@@ -95,3 +95,12 @@ export const tokenizeQuery = (query: string): string[] =>
 
 export const matchesAllTokens = (haystack: string, tokens: string[]): boolean =>
   tokens.every((token) => haystack.includes(token));
+
+export const getInitials = (name?: string): string =>
+  (name ?? "")
+    .split(/[\s._@-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => [...part][0])
+    .join("")
+    .toUpperCase();

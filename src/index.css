@@ -1,14 +1,18 @@
+@layer theme, base, mantine, components, utilities;
+
 @import "tailwindcss";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@custom-variant traffic-lights (&:where([data-platform="macos"]:not([data-fullscreen]) *));
 
 @theme static {
   --color-app: var(--oct-app);
   --color-surface: var(--oct-surface);
   --color-surface-2: var(--oct-surface-2);
   --color-surface-3: var(--oct-surface-3);
-  --color-line: var(--oct-line);
   --color-surface-active: var(--oct-surface-active);
+  --color-line: var(--oct-line);
+  --color-line-subtle: var(--oct-line-subtle);
   --color-line-strong: var(--oct-line-strong);
   --color-strong: var(--oct-strong);
   --color-body: var(--oct-body);
@@ -17,6 +21,49 @@
   --color-inverse: var(--oct-inverse);
   --color-inverse-fg: var(--oct-inverse-fg);
   --color-inverse-hover: var(--oct-inverse-hover);
+  --color-focus: var(--oct-focus);
+  --color-brand: var(--oct-brand);
+  --color-brand-fg: var(--oct-brand-fg);
+
+  --shadow-card: var(--oct-shadow-card);
+  --shadow-raised: var(--oct-shadow-raised);
+  --shadow-overlay: var(--oct-shadow-overlay);
+
+  --text-micro: 0.6875rem;
+  --text-micro--line-height: 1rem;
+  --text-ui: 0.8125rem;
+  --text-ui--line-height: 1.25rem;
+
+  --font-sans:
+    "Ubuntu", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Cascadia Mono",
+    "Ubuntu Mono", "DejaVu Sans Mono", "Liberation Mono", monospace;
+
+  --default-transition-duration: 150ms;
+
+  --animate-page-in: page-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-pulse-ring: pulse-ring 2s ease-out infinite;
+
+  @keyframes page-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+  }
+
+  @keyframes pulse-ring {
+    0% {
+      box-shadow: 0 0 0 0 rgb(16 185 129 / 0.4);
+    }
+    70% {
+      box-shadow: 0 0 0 7px rgb(16 185 129 / 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgb(16 185 129 / 0);
+    }
+  }
 }
 
 :root {
@@ -24,8 +71,9 @@
   --oct-surface: #ffffff;
   --oct-surface-2: #f8fafc;
   --oct-surface-3: #f1f5f9;
-  --oct-line: #e2e8f0;
   --oct-surface-active: #e2e8f0;
+  --oct-line: #e2e8f0;
+  --oct-line-subtle: #f1f5f9;
   --oct-line-strong: #cbd5e1;
   --oct-strong: #0f172a;
   --oct-body: #334155;
@@ -33,30 +81,51 @@
   --oct-faint: #94a3b8;
   --oct-inverse: #18181b;
   --oct-inverse-fg: #ffffff;
-  --oct-inverse-hover: #000000;
+  --oct-inverse-hover: #27272a;
+  --oct-focus: #94a3b8;
+  --oct-switch-on: #18181b;
+  --oct-segment: #ffffff;
+  --oct-brand: #18181b;
+  --oct-brand-fg: #ffffff;
+
+  --oct-shadow-card: 0 1px 2px rgb(15 23 42 / 0.05);
+  --oct-shadow-raised: 0 4px 12px rgb(15 23 42 / 0.08);
+  --oct-shadow-overlay: 0 16px 40px rgb(15 23 42 / 0.14);
 
   color-scheme: light;
   color: var(--oct-strong);
   background: var(--oct-app);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 [data-theme="dark"] {
   --oct-app: oklch(15.5% 0.004 286);
   --oct-surface: oklch(20.5% 0.005 286);
-  --oct-surface-2: oklch(23% 0.004 286);
-  --oct-surface-3: oklch(26% 0.005 286);
-  --oct-line: oklch(29.5% 0.005 286);
+  --oct-surface-2: oklch(18.5% 0.004 286);
+  --oct-surface-3: oklch(24% 0.005 286);
   --oct-surface-active: oklch(30% 0.005 286);
+  --oct-line: oklch(29.5% 0.005 286);
+  --oct-line-subtle: oklch(24.5% 0.004 286);
   --oct-line-strong: oklch(38% 0.006 286);
   --oct-strong: oklch(94.5% 0.004 286);
   --oct-body: oklch(85% 0.005 286);
-  --oct-muted: oklch(72.5% 0.007 286);
+  --oct-muted: oklch(68.5% 0.007 286);
   --oct-faint: oklch(58% 0.008 286);
   --oct-inverse: oklch(94.5% 0.004 286);
   --oct-inverse-fg: oklch(20% 0.005 286);
   --oct-inverse-hover: oklch(98% 0.002 286);
+  --oct-focus: oklch(58% 0.008 286);
+  --oct-switch-on: oklch(62% 0.008 286);
+  --oct-segment: oklch(32% 0.005 286);
+  --oct-brand: oklch(30% 0.005 286);
+  --oct-brand-fg: oklch(96% 0.003 286);
+
+  --oct-shadow-card: 0 1px 2px rgb(0 0 0 / 0.5);
+  --oct-shadow-raised: 0 4px 12px rgb(0 0 0 / 0.55);
+  --oct-shadow-overlay: 0 16px 40px rgb(0 0 0 / 0.7);
 
   color-scheme: dark;
 }
@@ -64,15 +133,36 @@
 html,
 body,
 #root {
+  height: 100%;
   min-width: 320px;
-  min-height: 100%;
+}
+
+html,
+body {
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 body {
   margin: 0;
-  font-family: "Ubuntu", sans-serif;
-  overflow-x: hidden;
+  font-family: var(--font-sans);
   background-color: var(--oct-app);
+  cursor: default;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea,
+[contenteditable="true"],
+[data-selectable],
+[data-selectable] * {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+[data-selectable] {
+  cursor: text;
 }
 
 button,
@@ -83,28 +173,88 @@ a {
 a:focus-visible,
 button:focus-visible,
 [role="button"]:focus-visible {
-  outline: 2px solid var(--oct-strong);
+  outline: 2px solid var(--oct-focus);
   outline-offset: 2px;
 }
 
-button {
-  -webkit-user-select: none;
-  user-select: none;
+img,
+svg {
+  -webkit-user-drag: none;
 }
 
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+::selection {
+  background: color-mix(in oklab, #3b82f6 28%, transparent);
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--oct-line-strong);
-  border: 3px solid transparent;
-  border-radius: 8px;
+.mantine-Input-input::placeholder {
+  color: var(--oct-faint);
+  font-weight: 400;
+}
+
+.mantine-Input-input:focus,
+.mantine-Input-input[data-focus],
+.mantine-Input-input:focus-within {
+  border-color: var(--oct-strong);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--oct-strong) 10%, transparent);
+  outline: none;
+}
+
+.mantine-Input-input:disabled,
+.mantine-Input-input[data-disabled] {
+  background-color: var(--oct-surface-2);
+  color: var(--oct-faint);
+  border-color: var(--oct-line);
+  opacity: 1;
+}
+
+.mantine-Combobox-option[data-combobox-selected] {
+  background-color: var(--oct-inverse);
+  color: var(--oct-inverse-fg);
+}
+
+.mantine-Combobox-option[data-combobox-active]:not([data-combobox-selected]) {
+  background-color: var(--oct-surface-3);
+}
+
+.mantine-SegmentedControl-label[data-active] {
+  color: var(--oct-strong);
+}
+
+.mantine-Pagination-control:hover:not([data-active]):not(:disabled) {
+  background-color: var(--oct-surface-2);
+  border-color: var(--oct-line-strong);
+}
+
+.mantine-Pagination-control[data-active] {
+  background-color: var(--oct-inverse) !important;
+  border-color: var(--oct-inverse) !important;
+  color: var(--oct-inverse-fg) !important;
+}
+
+.mantine-Button-root:focus-visible,
+.mantine-ActionIcon-root:focus-visible {
+  outline: 2px solid var(--oct-focus);
+  outline-offset: 2px;
+}
+
+:root:not([data-platform="macos"]) ::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+:root:not([data-platform="macos"]) ::-webkit-scrollbar-thumb {
+  background-color: var(--oct-line-strong);
+  border: 4px solid transparent;
+  border-radius: 9999px;
   background-clip: content-box;
 }
 
-::-webkit-scrollbar-track {
+:root:not([data-platform="macos"]) ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--oct-faint);
+}
+
+:root:not([data-platform="macos"]) ::-webkit-scrollbar-track,
+:root:not([data-platform="macos"]) ::-webkit-scrollbar-corner {
   background: transparent;
 }
 

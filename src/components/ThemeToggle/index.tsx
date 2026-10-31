@@ -24,14 +24,14 @@ const ThemeToggle = () => {
     <Tooltip label={LABELS[theme]}>
       <ActionIcon
         aria-label={LABELS[theme]}
-        variant="default"
-        size="lg"
+        size={34}
         radius="md"
+        className="text-muted hover:text-strong"
         onClick={() => dispatch(setTheme({ theme: NEXT[theme] }))}
       >
-        {theme === "light" && <Sun size={17} aria-hidden />}
-        {theme === "dark" && <Moon size={17} aria-hidden />}
-        {theme === "system" && <Monitor size={17} aria-hidden />}
+        {theme === "light" && <Sun size={16} aria-hidden />}
+        {theme === "dark" && <Moon size={16} aria-hidden />}
+        {theme === "system" && <Monitor size={16} aria-hidden />}
       </ActionIcon>
     </Tooltip>
   );

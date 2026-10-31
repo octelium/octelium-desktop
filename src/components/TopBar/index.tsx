@@ -1,21 +1,26 @@
 /// <reference types="vite-plugin-svgr/client" />
 
 import Wordmark from "@/assets/wordmark.svg?react";
+import AccountMenu from "@/components/AccountMenu";
 import ThemeToggle from "@/components/ThemeToggle";
 
-const TopBar = () => {
+const TopBar = (props: { onSignOut: (domain: string) => void }) => {
   return (
-    <nav className="flex h-[60px] w-full items-center px-4">
-      <div className="flex flex-none items-center justify-center text-strong">
-        <Wordmark className="h-auto w-36" aria-label="Octelium" />
+    <header
+      data-tauri-drag-region="deep"
+      className="relative z-20 flex h-[52px] w-full flex-none items-center gap-2 border-b border-line bg-app px-4 traffic-lights:pl-[88px]"
+    >
+      <div className="flex flex-none items-center text-strong">
+        <Wordmark className="h-auto w-[116px]" aria-label="Octelium" />
       </div>
 
-      <div className="flex-grow" />
+      <div className="flex-1" />
 
-      <div className="flex flex-none items-center">
+      <div className="flex flex-none items-center gap-1">
         <ThemeToggle />
+        <AccountMenu onSignOut={props.onSignOut} />
       </div>
-    </nav>
+    </header>
   );
 };
 

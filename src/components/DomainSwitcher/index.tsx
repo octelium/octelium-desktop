@@ -1,3 +1,6 @@
+/// <reference types="vite-plugin-svgr/client" />
+
+import Mark from "@/assets/mark.svg?react";
 import StatusDot from "@/components/StatusDot";
 import { useDomainState, useSelectDomain } from "@/features/daemon/hooks";
 import {
@@ -9,7 +12,7 @@ import {
 } from "@/utils/daemon";
 import { useAppSelector } from "@/utils/hooks";
 import { Menu, UnstyledButton } from "@mantine/core";
-import { ChevronDown, ChevronsUpDown, Plus } from "lucide-react";
+import { Check, ChevronsUpDown, Settings2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const DomainSwitcher = () => {
@@ -34,69 +37,64 @@ const DomainSwitcher = () => {
       : getAuthenticationStateLabel(current.authentication?.state)
     : selected
       ? "Sign in required"
-      : "Add your Cluster domain";
-
-  const content = (
-    <>
-      <StatusDot
-        tone={getConnectionStateTone(current?.connection?.state)}
-        pulse={isConnectionBusy(current)}
-      />
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-semibold text-strong">
-          {selected ?? "Set up Octelium"}
-        </div>
-        <div className="truncate text-[11px] font-medium text-muted">
-          {stateLabel}
-        </div>
-      </div>
-    </>
-  );
+      : "No Cluster yet";
 
   return (
-    <Menu shadow="md" radius="md" width="target" position="bottom-start">
+    <Menu width="target" position="bottom-start" offset={6}>
       <Menu.Target>
         <UnstyledButton
-          aria-label="Open Cluster menu"
-          className="flex w-full items-center gap-2.5 rounded-xl border border-line bg-surface px-3 py-3 text-left shadow-xs transition-colors hover:border-line-strong hover:bg-surface-2"
+          aria-label="Open the Cluster menu"
+          className="group flex w-full items-center gap-2.5 rounded-xl border border-line bg-surface p-2 text-left shadow-card transition-[border-color,background-color] duration-150 hover:border-line-strong data-[expanded]:border-line-strong"
         >
-          {content}
-          {multiCluster && domains.length > 1 ? (
-            <ChevronsUpDown
-              size={16}
-              className="flex-none text-faint"
-              aria-hidden
-            />
-          ) : (
-            <ChevronDown
-              size={16}
-              className="flex-none text-faint"
-              aria-hidden
-            />
-          )}
+          <span className="relative flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-brand text-brand-fg dark:ring-1 dark:ring-line-strong dark:ring-inset">
+            <Mark className="h-[18px] w-[18px]" aria-hidden />
+            <span className="absolute -right-0.5 -bottom-0.5 flex rounded-full bg-surface p-[2px]">
+              <StatusDot
+                size={8}
+                tone={getConnectionStateTone(current?.connection?.state)}
+                pulse={isConnectionBusy(current)}
+              />
+            </span>
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-ui font-medium text-strong">
+              {selected ?? "Set up Octelium"}
+            </span>
+            <span className="block truncate text-micro text-muted">
+              {stateLabel}
+            </span>
+          </span>
+          <ChevronsUpDown
+            size={14}
+            className="flex-none text-faint transition-colors group-hover:text-muted"
+            aria-hidden
+          />
         </UnstyledButton>
       </Menu.Target>
 
       <Menu.Dropdown>
-        <Menu.Label>Cluster domains</Menu.Label>
+        {visibleDomains.length > 0 && <Menu.Label>Clusters</Menu.Label>}
         {visibleDomains.map((item) => (
           <Menu.Item
             key={item.domain}
-            className="font-bold"
             leftSection={
               <StatusDot
                 tone={getConnectionStateTone(item.connection?.state)}
               />
             }
+            rightSection={
+              item.domain === selected ? (
+                <Check size={14} className="text-muted" aria-hidden />
+              ) : undefined
+            }
             onClick={() => selectDomain(item.domain)}
           >
-            <span className="truncate">{item.domain}</span>
+            <span className="block truncate">{item.domain}</span>
           </Menu.Item>
         ))}
-        {domains.length > 0 && <Menu.Divider />}
+        {visibleDomains.length > 0 && <Menu.Divider />}
         <Menu.Item
-          className="font-bold"
-          leftSection={<Plus size={15} aria-hidden />}
+          leftSection={<Settings2 size={14} aria-hidden />}
           onClick={() => navigate("/settings?section=clusters")}
         >
           Manage Clusters

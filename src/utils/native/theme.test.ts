@@ -5,7 +5,7 @@ import { getCurrentWindow, type Theme } from "@tauri-apps/api/window";
 import { platform } from "@tauri-apps/plugin-os";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
-import { setNativeTheme, watchSystemTheme } from "./theme";
+import { NATIVE_APPEARANCE, setNativeTheme, watchSystemTheme } from "./theme";
 
 vi.mock("@/utils/native", () => ({ isNative: vi.fn() }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
@@ -80,6 +80,36 @@ test.each(["windows", "macos"] as const)(
   },
 );
 
+test.each(["linux", "windows", "macos"] as const)(
+  "setNativeTheme applies the resolved native appearance on %s",
+  async (value) => {
+    vi.mocked(platform).mockReturnValue(value);
+
+    await setNativeTheme("system", true);
+    expect(invoke).toHaveBeenLastCalledWith("set_appearance", {
+      appearance: NATIVE_APPEARANCE.dark,
+    });
+
+    await setNativeTheme("system", false);
+    expect(invoke).toHaveBeenLastCalledWith("set_appearance", {
+      appearance: NATIVE_APPEARANCE.light,
+    });
+
+    await setNativeTheme("dark", false);
+    expect(invoke).toHaveBeenLastCalledWith("set_appearance", {
+      appearance: NATIVE_APPEARANCE.dark,
+    });
+  },
+);
+
+test("NATIVE_APPEARANCE only uses hexadecimal colors", () => {
+  for (const appearance of Object.values(NATIVE_APPEARANCE)) {
+    for (const color of Object.values(appearance)) {
+      expect(color).toMatch(/^#[0-9a-f]{6}$/);
+    }
+  }
+});
+
 test("setNativeTheme skips browser previews", async () => {
   vi.mocked(isNative).mockReturnValue(false);
 
@@ -87,6 +117,7 @@ test("setNativeTheme skips browser previews", async () => {
 
   expect(getCurrentWindow).not.toHaveBeenCalled();
   expect(platform).not.toHaveBeenCalled();
+  expect(invoke).not.toHaveBeenCalled();
 });
 
 test("watchSystemTheme uses Linux portal appearance independently of GTK", async () => {

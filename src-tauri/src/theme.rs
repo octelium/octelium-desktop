@@ -1,10 +1,16 @@
+use std::cell::RefCell;
 use std::sync::Mutex;
 use std::time::Duration;
 
 use dbus::arg::Variant;
 use dbus::blocking::Connection;
 use dbus::message::MatchRule;
+use gtk::prelude::*;
 use tauri::{AppHandle, Emitter, Manager, Runtime, Theme};
+
+thread_local! {
+    static TITLEBAR_PROVIDER: RefCell<Option<gtk::CssProvider>> = const { RefCell::new(None) };
+}
 
 const PORTAL_SERVICE: &str = "org.freedesktop.portal.Desktop";
 const PORTAL_PATH: &str = "/org/freedesktop/portal/desktop";
@@ -77,9 +83,87 @@ pub fn init<R: Runtime>(app: &AppHandle<R>) {
     });
 }
 
+fn get_titlebar_css(background: &str, foreground: &str, muted: &str) -> String {
+    format!(
+        r#"headerbar.titlebar.default-decoration,
+.titlebar.default-decoration {{
+  background: {background};
+  background-image: none;
+  color: {foreground};
+  border: none;
+  box-shadow: none;
+}}
+
+headerbar.titlebar.default-decoration:backdrop,
+.titlebar.default-decoration:backdrop {{
+  background: {background};
+  background-image: none;
+  color: {muted};
+}}
+
+.titlebar.default-decoration button.titlebutton {{
+  color: inherit;
+  background: none;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+  text-shadow: none;
+  -gtk-icon-shadow: none;
+}}
+
+.titlebar.default-decoration button.titlebutton:hover {{
+  background: alpha({foreground}, 0.1);
+}}
+
+.titlebar.default-decoration button.titlebutton:active {{
+  background: alpha({foreground}, 0.18);
+}}
+"#
+    )
+}
+
+pub fn set_titlebar<R: Runtime>(
+    app: &AppHandle<R>,
+    background: &str,
+    foreground: &str,
+    muted: &str,
+) -> tauri::Result<()> {
+    let css = get_titlebar_css(background, foreground, muted);
+
+    app.run_on_main_thread(move || {
+        TITLEBAR_PROVIDER.with(|cell| {
+            let mut cell = cell.borrow_mut();
+            let provider = cell.get_or_insert_with(|| {
+                let provider = gtk::CssProvider::new();
+                if let Some(screen) = gtk::gdk::Screen::default() {
+                    gtk::StyleContext::add_provider_for_screen(
+                        &screen,
+                        &provider,
+                        gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+                    );
+                }
+                provider
+            });
+
+            let _ = provider.load_from_data(css.as_bytes());
+        });
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_get_titlebar_css() {
+        let css = get_titlebar_css("#0c0c0e", "#ececef", "#99999c");
+
+        assert!(css.contains("background: #0c0c0e;"));
+        assert!(css.contains("color: #ececef;"));
+        assert!(css.contains("color: #99999c;"));
+        assert!(css.contains("alpha(#ececef, 0.1)"));
+        assert_eq!(css.matches('{').count(), css.matches('}').count());
+    }
 
     #[test]
     fn test_get_theme() {

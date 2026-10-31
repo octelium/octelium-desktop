@@ -1,5 +1,9 @@
-import ConfirmModal from "@/components/ConfirmModal";
+/// <reference types="vite-plugin-svgr/client" />
+
+import Mark from "@/assets/mark.svg?react";
+import { Card } from "@/components/Card";
 import ClusterSignIn from "@/components/ClusterSignIn";
+import ConfirmModal from "@/components/ConfirmModal";
 import Label from "@/components/Label";
 import PageHeader from "@/components/PageHeader";
 import StatusDot from "@/components/StatusDot";
@@ -21,13 +25,22 @@ import {
   getConnectionStateLabel,
   getConnectionStateTone,
   isAuthenticated,
+  isConnected,
   isConnectionBusy,
 } from "@/utils/daemon";
 import { useAppSelector } from "@/utils/hooks";
 import { openExternal } from "@/utils/native";
-import { Button } from "@mantine/core";
+import { ActionIcon, Button, Menu } from "@mantine/core";
 import { useMutation } from "@tanstack/react-query";
-import { LogIn, LogOut, Plug, PlugZap, Trash2 } from "lucide-react";
+import {
+  ArrowRight,
+  Ellipsis,
+  LogIn,
+  LogOut,
+  Plug,
+  PlugZap,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -38,7 +51,7 @@ const AddCluster = (props: { hasClusters: boolean }) => {
       title={props.hasClusters ? "Add another Cluster" : "Add a Cluster"}
       description={
         props.hasClusters
-          ? "Add another domain. The selected domain becomes the primary Cluster shown throughout the app."
+          ? "The selected domain becomes the primary Cluster shown throughout the app."
           : "Enter your Cluster domain to sign in and connect this device."
       }
     />
@@ -96,109 +109,132 @@ const ClusterItem = (props: { item: DomainState }) => {
   });
 
   return (
-    <article className="group/item w-full rounded-xl border border-line bg-surface p-4 shadow-xs transition-all duration-500 hover:border-line-strong hover:shadow-md">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <button
-          type="button"
-          className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left"
-          onClick={() => {
-            selectDomain(item.domain);
-            navigate("/connection");
-          }}
-        >
-          <StatusDot
-            size={12}
-            tone={getConnectionStateTone(item.connection?.state)}
-            pulse={isConnectionBusy(item)}
-          />
-          <div className="min-w-0">
-            <div className="flex min-w-0 items-center gap-2">
-              <h2 className="truncate text-[15px] font-bold tracking-tight text-strong">
-                {item.domain}
-              </h2>
-              {item.domain === selected && (
-                <Label tone="sky" className="flex-none">
-                  Selected
+    <li>
+      <Card interactive>
+        <div className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center">
+          <button
+            type="button"
+            className="group flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            onClick={() => {
+              selectDomain(item.domain);
+              navigate("/connection");
+            }}
+          >
+            <span className="relative flex h-9 w-9 flex-none items-center justify-center rounded-lg bg-brand text-brand-fg dark:ring-1 dark:ring-line-strong dark:ring-inset">
+              <Mark className="h-5 w-5" aria-hidden />
+              <span className="absolute -right-0.5 -bottom-0.5 flex rounded-full bg-surface p-[2px]">
+                <StatusDot
+                  size={9}
+                  tone={getConnectionStateTone(item.connection?.state)}
+                  pulse={isConnectionBusy(item)}
+                />
+              </span>
+            </span>
+            <span className="min-w-0">
+              <span className="flex min-w-0 items-center gap-2">
+                <span className="truncate text-sm font-medium text-strong">
+                  {item.domain}
+                </span>
+                {item.domain === selected && <Label tone="sky">Selected</Label>}
+                <ArrowRight
+                  size={13}
+                  className="flex-none text-faint opacity-0 transition-opacity group-hover:opacity-100"
+                  aria-hidden
+                />
+              </span>
+              <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                <Label
+                  tone={getAuthenticationStateTone(item.authentication?.state)}
+                  dot
+                >
+                  {getAuthenticationStateLabel(item.authentication?.state)}
                 </Label>
-              )}
-            </div>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
-              <Label tone={getAuthenticationStateTone(item.authentication?.state)}>
-                {getAuthenticationStateLabel(item.authentication?.state)}
-              </Label>
-              <Label tone="slate">
-                {getConnectionStateLabel(item.connection?.state)}
-              </Label>
-              {item.settings?.autoConnect && (
-                <Label tone="neutral">Auto connect</Label>
-              )}
-            </div>
-          </div>
-        </button>
+                {isAuthenticated(item) && (
+                  <Label
+                    tone={isConnected(item) ? "emerald" : "slate"}
+                    dot
+                  >
+                    {getConnectionStateLabel(item.connection?.state)}
+                  </Label>
+                )}
+                {item.settings?.autoConnect && (
+                  <Label tone="slate">Auto connect</Label>
+                )}
+              </span>
+            </span>
+          </button>
 
-        <div className="flex flex-none flex-wrap items-center gap-2">
-          {isAuthenticated(item) ? (
-            canDisconnect(item) ? (
-              <Button
-                size="xs"
-                variant="outline"
-                loading={mutation.isPending && mutation.variables === "disconnect"}
-                leftSection={<Plug size={14} aria-hidden />}
-                onClick={() => mutation.mutate("disconnect")}
-              >
-                Disconnect
-              </Button>
+          <div className="flex flex-none items-center gap-1.5">
+            {isAuthenticated(item) ? (
+              canDisconnect(item) ? (
+                <Button
+                  size="xs"
+                  variant="default"
+                  loading={mutation.isPending && mutation.variables === "disconnect"}
+                  leftSection={<Plug size={13} aria-hidden />}
+                  onClick={() => mutation.mutate("disconnect")}
+                >
+                  Disconnect
+                </Button>
+              ) : (
+                <Button
+                  size="xs"
+                  disabled={!canConnect(item)}
+                  loading={mutation.isPending && mutation.variables === "connect"}
+                  leftSection={<PlugZap size={13} aria-hidden />}
+                  onClick={() => mutation.mutate("connect")}
+                >
+                  Connect
+                </Button>
+              )
             ) : (
               <Button
                 size="xs"
-                disabled={!canConnect(item)}
-                loading={mutation.isPending && mutation.variables === "connect"}
-                leftSection={<PlugZap size={14} aria-hidden />}
-                onClick={() => mutation.mutate("connect")}
+                disabled={isConnectionBusy(item) || mutation.isPending}
+                loading={mutationAuth.isPending}
+                leftSection={<LogIn size={13} aria-hidden />}
+                onClick={() => mutationAuth.mutate()}
               >
-                Connect
+                Sign in
               </Button>
-            )
-          ) : (
-            <Button
-              size="xs"
-              disabled={isConnectionBusy(item) || mutation.isPending}
-              loading={mutationAuth.isPending}
-              leftSection={<LogIn size={14} aria-hidden />}
-              onClick={() => mutationAuth.mutate()}
-            >
-              Sign in
-            </Button>
-          )}
+            )}
 
-          {isAuthenticated(item) && (
-            <Button
-              size="xs"
-              variant="outline"
-              leftSection={<LogOut size={14} aria-hidden />}
-              onClick={() => setConfirm("logout")}
-            >
-              Sign out
-            </Button>
-          )}
+            <Menu position="bottom-end" width={180}>
+              <Menu.Target>
+                <ActionIcon size={30} aria-label={`More actions for ${item.domain}`}>
+                  <Ellipsis size={16} aria-hidden />
+                </ActionIcon>
+              </Menu.Target>
+              <Menu.Dropdown>
+                {isAuthenticated(item) && (
+                  <Menu.Item
+                    leftSection={<LogOut size={14} aria-hidden />}
+                    onClick={() => setConfirm("logout")}
+                  >
+                    Sign out
+                  </Menu.Item>
+                )}
+                <Menu.Item
+                  color="red"
+                  leftSection={<Trash2 size={14} aria-hidden />}
+                  onClick={() => setConfirm("delete")}
+                >
+                  Remove
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </div>
+        </div>
 
-          <Button
-            size="xs"
-            variant="outline"
-            color="red"
-            leftSection={<Trash2 size={14} aria-hidden />}
-            onClick={() => setConfirm("delete")}
+        {(mutation.isError || mutationAuth.isError) && confirm === undefined && (
+          <div
+            role="alert"
+            className="border-t border-line-subtle px-4 py-2.5 text-xs font-medium text-rose-700 dark:text-rose-300"
           >
-            Remove
-          </Button>
-        </div>
-      </div>
-
-      {(mutation.isError || mutationAuth.isError) && confirm === undefined && (
-        <div className="mt-3 text-sm font-semibold text-rose-600 dark:text-rose-400">
-          {getErrorMessage(mutation.error ?? mutationAuth.error)}
-        </div>
-      )}
+            {getErrorMessage(mutation.error ?? mutationAuth.error)}
+          </div>
+        )}
+      </Card>
 
       <ConfirmModal
         opened={confirm === "logout"}
@@ -206,12 +242,14 @@ const ClusterItem = (props: { item: DomainState }) => {
         onConfirm={() => mutation.mutate("logout")}
         title="Sign out"
         confirmLabel="Sign out"
+        color="red"
+        icon={<LogOut size={14} strokeWidth={2.25} aria-hidden />}
         isPending={mutation.isPending}
         error={mutation.isError ? getErrorMessage(mutation.error) : undefined}
       >
-        Signing out of <strong>{item.domain}</strong> disconnects the Cluster,
-        invalidates the Session and removes the stored credentials of this
-        machine.
+        Signing out of <strong className="font-medium text-strong">{item.domain}</strong>{" "}
+        disconnects the Cluster, invalidates the Session and removes the stored
+        credentials of this machine.
       </ConfirmModal>
 
       <ConfirmModal
@@ -221,13 +259,15 @@ const ClusterItem = (props: { item: DomainState }) => {
         title="Remove the Cluster"
         confirmLabel="Remove"
         color="red"
+        icon={<Trash2 size={14} strokeWidth={2.25} aria-hidden />}
         isPending={mutation.isPending}
         error={mutation.isError ? getErrorMessage(mutation.error) : undefined}
       >
-        Removing <strong>{item.domain}</strong> signs out and deletes both the
-        credentials and the locally stored settings of the Cluster.
+        Removing <strong className="font-medium text-strong">{item.domain}</strong>{" "}
+        signs out and deletes both the credentials and the locally stored settings
+        of the Cluster.
       </ConfirmModal>
-    </article>
+    </li>
   );
 };
 
@@ -245,15 +285,15 @@ const Clusters = (props: { embedded?: boolean }) => {
       )}
 
       <div className="flex flex-col gap-4">
-        <AddCluster hasClusters={domains.length > 0} />
-
         {domains.length > 0 && (
-          <div className="flex w-full flex-col gap-2.5">
+          <ul aria-label="Clusters" className="m-0 flex list-none flex-col gap-2 p-0">
             {domains.map((itm) => (
               <ClusterItem key={itm.domain} item={itm} />
             ))}
-          </div>
+          </ul>
         )}
+
+        <AddCluster hasClusters={domains.length > 0} />
       </div>
     </div>
   );

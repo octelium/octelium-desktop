@@ -8,6 +8,7 @@ import {
   Error_Code,
   Operation_State,
   Operation_Type,
+  type ConnectionStatus,
   type DomainState,
   type Error as DaemonError,
   type GetStatusResponse,
@@ -211,6 +212,46 @@ export const getL3ModeLabel = (arg?: ConnectionOptions_L3Mode): string => {
     default:
       return "Automatic";
   }
+};
+
+export const getConnectionL3Mode = (
+  arg?: ConnectionStatus,
+): ConnectionOptions_L3Mode => {
+  const requested =
+    arg?.options?.l3Mode ?? ConnectionOptions_L3Mode.L3_MODE_UNSPECIFIED;
+  if (
+    requested === ConnectionOptions_L3Mode.V4 ||
+    requested === ConnectionOptions_L3Mode.V6
+  ) {
+    return requested;
+  }
+
+  const servers = arg?.dns?.servers ?? [];
+  const hasV4 = servers.some((itm) => !itm.includes(":"));
+  const hasV6 = servers.some((itm) => itm.includes(":"));
+
+  if (hasV4 && hasV6) {
+    return ConnectionOptions_L3Mode.BOTH;
+  }
+  if (hasV4) {
+    return ConnectionOptions_L3Mode.V4;
+  }
+  if (hasV6) {
+    return ConnectionOptions_L3Mode.V6;
+  }
+
+  return requested;
+};
+
+export const getConnectionAddresses = (arg?: ConnectionStatus): string[] => {
+  const mode = getConnectionL3Mode(arg);
+  const showIPv4 = mode !== ConnectionOptions_L3Mode.V6;
+  const showIPv6 = mode !== ConnectionOptions_L3Mode.V4;
+
+  return (arg?.addresses ?? []).flatMap((itm) => [
+    ...(showIPv4 && itm.v4 ? [itm.v4] : []),
+    ...(showIPv6 && itm.v6 ? [itm.v6] : []),
+  ]);
 };
 
 export const getDNSModeLabel = (arg?: ConnectionOptions_DNS_Mode): string => {

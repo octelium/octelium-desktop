@@ -69,6 +69,32 @@ export const useNativeIntegration = (onSignOut: (domain: string) => void) => {
   }, [isLoaded, startMinimized]);
 
   useEffect(() => {
+    if (
+      !isNative() ||
+      document.documentElement.getAttribute("data-platform") !== "macos"
+    ) {
+      return;
+    }
+
+    const current = getCurrentWindow();
+    const update = () => {
+      void current
+        .isFullscreen()
+        .then((value) =>
+          document.documentElement.toggleAttribute("data-fullscreen", value),
+        )
+        .catch(() => {});
+    };
+
+    update();
+    const unlisten = current.onResized(update);
+
+    return () => {
+      void unlisten.then((fn) => fn());
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isNative()) {
       return;
     }

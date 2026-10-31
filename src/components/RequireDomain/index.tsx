@@ -19,7 +19,7 @@ const RequireDomain = (props: {
       <EmptyState
         title="Set up your Cluster"
         message="Add your primary domain to browse the Services available to you."
-        icon={<Shield size={22} aria-hidden />}
+        icon={<Shield size={18} aria-hidden />}
         action={
           <Button onClick={() => navigate("/connection")}>Get started</Button>
         }
@@ -32,7 +32,7 @@ const RequireDomain = (props: {
       <EmptyState
         title={`Sign in to ${domain}`}
         message="The Cluster resources are read directly from the Cluster API using your Session."
-        icon={<LogIn size={22} aria-hidden />}
+        icon={<LogIn size={18} aria-hidden />}
         action={
           <Button onClick={() => navigate("/connection")}>Sign in again</Button>
         }

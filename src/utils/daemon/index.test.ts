@@ -4,7 +4,9 @@ import {
   AuthenticationStatus_State,
   ConnectionOptions_DNS_Mode,
   ConnectionOptions_ImplementationMode,
+  ConnectionOptions_L3Mode,
   ConnectionOptions_TunnelMode,
+  ConnectionStatus,
   ConnectionStatus_State,
   Error_Code,
   Operation_State,
@@ -16,6 +18,8 @@ import {
 import {
   canConnect,
   canDisconnect,
+  getConnectionAddresses,
+  getConnectionL3Mode,
   getConnectionStateLabel,
   getDNSModeLabel,
   getDomainState,
@@ -522,4 +526,45 @@ test("isErrorRetryable", () => {
   {
     expect(isErrorRetryable(undefined)).toBe(false);
   }
+});
+
+test.each([
+  [undefined, [], ConnectionOptions_L3Mode.L3_MODE_UNSPECIFIED],
+  [undefined, ["100.64.0.1"], ConnectionOptions_L3Mode.V4],
+  [undefined, ["fd00::1"], ConnectionOptions_L3Mode.V6],
+  [undefined, ["100.64.0.1", "fd00::1"], ConnectionOptions_L3Mode.BOTH],
+  [ConnectionOptions_L3Mode.L3_MODE_UNSPECIFIED, ["fd00::1", "fd00::2"], ConnectionOptions_L3Mode.V6],
+  [ConnectionOptions_L3Mode.BOTH, [], ConnectionOptions_L3Mode.BOTH],
+  [ConnectionOptions_L3Mode.BOTH, ["100.64.0.1"], ConnectionOptions_L3Mode.V4],
+  [ConnectionOptions_L3Mode.V4, ["100.64.0.1", "fd00::1"], ConnectionOptions_L3Mode.V4],
+  [ConnectionOptions_L3Mode.V6, ["100.64.0.1"], ConnectionOptions_L3Mode.V6],
+] as const)("getConnectionL3Mode with the IP mode %s and the DNS servers %j", (l3Mode, servers, expected) => {
+  expect(getConnectionL3Mode(ConnectionStatus.create({
+    options: l3Mode === undefined ? undefined : { l3Mode },
+    dns: { servers: [...servers] },
+  }))).toEqual(expected);
+});
+
+test("getConnectionL3Mode without a Connection", () => {
+  expect(getConnectionL3Mode(undefined)).toEqual(ConnectionOptions_L3Mode.L3_MODE_UNSPECIFIED);
+});
+
+test.each([
+  [[], ["100.64.0.1/32", "fd00::1/128", "100.64.0.2/32", "fd00::2/128"]],
+  [["fd00::53"], ["fd00::1/128", "fd00::2/128"]],
+  [["100.64.0.53"], ["100.64.0.1/32", "100.64.0.2/32"]],
+  [["100.64.0.53", "fd00::53"], ["100.64.0.1/32", "fd00::1/128", "100.64.0.2/32", "fd00::2/128"]],
+] as const)("getConnectionAddresses of an automatic IP mode Connection with the DNS servers %j", (servers, expected) => {
+  expect(getConnectionAddresses(ConnectionStatus.create({
+    addresses: [
+      { v4: "100.64.0.1/32", v6: "fd00::1/128" },
+      { v4: "100.64.0.2/32", v6: "fd00::2/128" },
+      {},
+    ],
+    dns: { servers: [...servers] },
+  }))).toEqual(expected);
+});
+
+test("getConnectionAddresses without a Connection", () => {
+  expect(getConnectionAddresses(undefined)).toEqual([]);
 });

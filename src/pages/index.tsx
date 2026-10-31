@@ -1,5 +1,5 @@
 import DaemonUnavailable from "@/components/DaemonUnavailable";
-import Footer from "@/components/Footer";
+import Notice from "@/components/Notice";
 import OperationBanner from "@/components/OperationBanner";
 import Sidebar from "@/components/Sidebar";
 import SignOutModal from "@/components/SignOutModal";
@@ -13,14 +13,13 @@ import {
 import { getActiveOperation } from "@/utils/daemon";
 import { useAppSelector } from "@/utils/hooks";
 import { useNativeIntegration } from "@/utils/hooks/native";
-import { Alert, AppShell, Burger } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
-import { useEffect, useState } from "react";
+import { AlertTriangle } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 
 const Root = () => {
-  const [opened, { toggle, close }] = useDisclosure(false);
   const location = useLocation();
+  const mainRef = useRef<HTMLElement>(null);
   const [signOutDomain, setSignOutDomain] = useState<string | undefined>(undefined);
   const availability = useAppSelector((state) => state.daemon.availability);
   const selectedDomain = useAppSelector(
@@ -37,79 +36,57 @@ const Root = () => {
   const { platform, trayError } = useNativeIntegration(setSignOutDomain);
 
   useEffect(() => {
-    close();
-  }, [close, location.pathname]);
+    mainRef.current?.scrollTo({ top: 0 });
+  }, [location.pathname]);
 
   return (
-    <div className="min-h-screen">
+    <div className="flex h-full w-full flex-col bg-app text-strong">
       <title>Octelium</title>
-      <div className="min-h-screen bg-app antialiased">
-        <AppShell
-          className="!bg-transparent"
-          header={{ height: 60 }}
-          navbar={{
-            width: 236,
-            breakpoint: "sm",
-            collapsed: { mobile: !opened },
-          }}
-          padding="md"
+      <TopBar onSignOut={setSignOutDomain} />
+
+      <div className="flex min-h-0 flex-1">
+        <Sidebar onSignOut={setSignOutDomain} />
+
+        <main
+          ref={mainRef}
+          className="min-w-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"
         >
-          <AppShell.Header className="border-line !bg-app">
-            <div className="flex h-full items-center">
-              <Burger
-                opened={opened}
-                onClick={toggle}
-                hiddenFrom="sm"
-                size="sm"
-                aria-label={opened ? "Close navigation" : "Open navigation"}
-              />
-              <TopBar />
+          {showContent ? (
+            <div
+              key={location.pathname}
+              className="mx-auto flex w-full max-w-5xl animate-page-in flex-col px-6 pt-6 pb-10"
+            >
+              {trayError && (
+                <Notice
+                  tone="rose"
+                  className="mb-4"
+                  icon={<AlertTriangle size={15} aria-hidden />}
+                  title="The tray action failed"
+                >
+                  {trayError}
+                </Notice>
+              )}
+              {availability !== "available" && (
+                <DaemonUnavailable compact platform={platform} />
+              )}
+              {availability === "available" && (
+                <OperationBanner operation={getActiveOperation(domainState)} />
+              )}
+              <Outlet />
             </div>
-          </AppShell.Header>
-
-          <AppShell.Navbar className="border-line !bg-app" p="md">
-            <Sidebar onNavigate={close} onSignOut={setSignOutDomain} />
-          </AppShell.Navbar>
-
-          <AppShell.Main className="min-h-screen !bg-transparent">
-            {showContent ? (
-              <div className="mx-auto flex min-h-[calc(100vh-60px)] w-full max-w-6xl flex-col">
-                <div className="min-w-0 flex-1">
-                  {trayError && (
-                    <Alert
-                      color="red"
-                      radius="md"
-                      className="mb-6"
-                      title="The tray action failed"
-                    >
-                      {trayError}
-                    </Alert>
-                  )}
-                  {availability !== "available" && (
-                    <DaemonUnavailable compact platform={platform} />
-                  )}
-                  {availability === "available" && (
-                    <OperationBanner
-                      operation={getActiveOperation(domainState)}
-                    />
-                  )}
-                  <Outlet />
-                </div>
-                <Footer />
-              </div>
-            ) : (
-              <DaemonUnavailable platform={platform} />
-            )}
-          </AppShell.Main>
-        </AppShell>
-        {signOutDomain && (
-          <SignOutModal
-            key={signOutDomain}
-            domain={signOutDomain}
-            onClose={() => setSignOutDomain(undefined)}
-          />
-        )}
+          ) : (
+            <DaemonUnavailable platform={platform} />
+          )}
+        </main>
       </div>
+
+      {signOutDomain && (
+        <SignOutModal
+          key={signOutDomain}
+          domain={signOutDomain}
+          onClose={() => setSignOutDomain(undefined)}
+        />
+      )}
     </div>
   );
 };

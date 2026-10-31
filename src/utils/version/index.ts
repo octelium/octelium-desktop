@@ -60,3 +60,30 @@ export const getLatestAppVersion = async (): Promise<string | null> => {
     window.clearTimeout(timeout);
   }
 };
+
+const parseVersion = (value: string): number[] | undefined => {
+  const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(value.split("+")[0]);
+  return match ? match.slice(1).map(Number) : undefined;
+};
+
+export const isNewerVersion = (
+  latest?: string | null,
+  current?: string,
+): boolean => {
+  const a = latest ? parseVersion(latest) : undefined;
+  const b = current ? parseVersion(current) : undefined;
+  if (!a || !b) {
+    return false;
+  }
+
+  for (let i = 0; i < 3; i += 1) {
+    if (a[i] !== b[i]) {
+      return a[i] > b[i];
+    }
+  }
+
+  return false;
+};
+
+export const RELEASES_PAGE_URL =
+  "https://github.com/octelium/octelium-desktop/releases/latest";

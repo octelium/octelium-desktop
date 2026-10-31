@@ -1,10 +1,16 @@
 import { setInfo, setSelectedDomain, setStatus, setUnavailable } from "@/features/daemon/slice";
 import { setPrimaryDomain } from "@/features/prefs/slice";
-import { getClientDaemon } from "@/utils/client";
-import { getDomainState, selectDomain } from "@/utils/daemon";
+import { getClientDaemon, getClientUser } from "@/utils/client";
+import {
+  getDomainState,
+  isAuthenticated,
+  isConnected,
+  selectDomain,
+} from "@/utils/daemon";
 import { useAppDispatch, useAppSelector } from "@/utils/hooks";
 import { clearDomainSession } from "@/utils/session";
 import { getRpcError } from "@/utils/transport";
+import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef } from "react";
 
 import { API_MAJOR_VERSION, getErrorMessage } from "./actions";
@@ -164,4 +170,21 @@ export const useSelectDomain = () => {
     },
     [dispatch],
   );
+};
+
+export const useClusterStatus = (domain?: string) => {
+  const state = useDomainState(domain);
+  const connected = isConnected(state);
+
+  return useQuery({
+    queryKey: ["user/getStatus", domain, connected],
+    enabled: !!domain && isAuthenticated(state),
+    staleTime: 5 * 60 * 1000,
+    placeholderData: (previous, previousQuery) =>
+      previousQuery?.queryKey[1] === domain ? previous : undefined,
+    queryFn: async () => {
+      const { response } = await getClientUser(domain!).getStatus({});
+      return response;
+    },
+  });
 };

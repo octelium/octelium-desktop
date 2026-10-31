@@ -73,6 +73,7 @@ pub fn run() {
             commands::grpc_invalidate_domain,
             commands::get_app_info,
             commands::get_system_theme,
+            commands::set_appearance,
             commands::open_external,
             commands::update_tray,
             commands::notify,

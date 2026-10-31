@@ -1,19 +1,12 @@
 /* eslint-disable react-refresh/only-export-components */
 
-import Loading from "@/components/Loading";
-import { lazy, Suspense } from "react";
 import { Navigate, type RouteObject } from "react-router-dom";
+import Connection from "./Connection";
+import Diagnostics from "./Diagnostics";
 import Root from "./index";
 import routerNamespaces from "./Namespaces/router";
 import routerServices from "./Services/router";
-
-const Connection = lazy(() => import("./Connection"));
-const Settings = lazy(() => import("./Settings"));
-const Diagnostics = lazy(() => import("./Diagnostics"));
-
-const withSuspense = (element: React.ReactNode) => (
-  <Suspense fallback={<Loading />}>{element}</Suspense>
-);
+import Settings from "./Settings";
 
 export default (): RouteObject => {
   return {
@@ -26,7 +19,7 @@ export default (): RouteObject => {
       },
       {
         path: "connection",
-        element: withSuspense(<Connection />),
+        element: <Connection />,
       },
       routerServices(),
       routerNamespaces(),
@@ -36,11 +29,11 @@ export default (): RouteObject => {
       },
       {
         path: "settings",
-        element: withSuspense(<Settings />),
+        element: <Settings />,
       },
       {
         path: "diagnostics",
-        element: withSuspense(<Diagnostics />),
+        element: <Diagnostics />,
       },
       {
         path: "*",

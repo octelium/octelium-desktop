@@ -1,6 +1,10 @@
 import ErrorBanner from "@/components/ErrorBanner";
 import { authenticateBrowser } from "@/features/daemon/actions";
-import { useDomainState, useSelectDomain } from "@/features/daemon/hooks";
+import {
+  useClusterStatus,
+  useDomainState,
+  useSelectDomain,
+} from "@/features/daemon/hooks";
 import {
   AuthenticationStatus_State,
   ConnectionOptions_ImplementationMode,
@@ -24,6 +28,7 @@ import Connection from ".";
 
 vi.mock("@/components/ErrorBanner", () => ({ default: vi.fn(() => null) }));
 vi.mock("@/features/daemon/hooks", () => ({
+  useClusterStatus: vi.fn(),
   useDomainState: vi.fn(),
   useSelectDomain: vi.fn(),
 }));
@@ -48,6 +53,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(useAppSelector).mockReturnValue("example.com");
   vi.mocked(useSelectDomain).mockReturnValue(vi.fn());
+  vi.mocked(useClusterStatus).mockReturnValue({ data: undefined } as never);
   vi.mocked(useDomainState).mockReturnValue(DomainState.create({
     domain: "example.com",
     authentication: { state: AuthenticationStatus_State.AUTHENTICATED },
@@ -151,5 +157,53 @@ test.each([
   for (const address of ["fd00::1/128", "fd00::2/128"]) {
     expect(markup.includes(address)).toBe(showIPv6);
   }
-  expect(markup.match(/Addresses<\/dt>/g)).toHaveLength(showIPv4 && showIPv6 ? 3 : 2);
+  expect(markup.match(/Addresses<\/dt>/g)).toHaveLength(1);
+});
+
+test.each([
+  [["fd00::53"], false, true, "IPv6 only"],
+  [["100.64.0.53"], true, false, "IPv4 only"],
+  [["100.64.0.53", "fd00::53"], true, true, "Dual stack"],
+] as const)("Connection displays the addresses of an automatic IP mode Connection with the DNS servers %j", (servers, showIPv4, showIPv6, label) => {
+  vi.mocked(useDomainState).mockReturnValue(DomainState.create({
+    domain: "example.com",
+    authentication: { state: AuthenticationStatus_State.AUTHENTICATED },
+    connection: {
+      state: ConnectionStatus_State.CONNECTED,
+      options: { l3Mode: ConnectionOptions_L3Mode.L3_MODE_UNSPECIFIED },
+      addresses: [{ v4: "100.64.0.1/32", v6: "fd00::1/128" }],
+      dns: { servers: [...servers] },
+    },
+  }));
+
+  const markup = render();
+  expect(markup.includes("100.64.0.1/32")).toBe(showIPv4);
+  expect(markup.includes("fd00::1/128")).toBe(showIPv6);
+  expect(markup).toMatch(new RegExp(`IP mode</dt><dd[^>]*>${label}</dd>`));
+});
+
+test("Connection displays the signed-in User", () => {
+  vi.mocked(useDomainState).mockReturnValue(DomainState.create({
+    domain: "example.com",
+    authentication: { state: AuthenticationStatus_State.AUTHENTICATED },
+  }));
+  vi.mocked(useClusterStatus).mockReturnValue({
+    data: {
+      domain: "example.com",
+      user: {
+        metadata: { name: "alex", displayName: "Alex Smith" },
+        spec: { email: "alex@example.com" },
+      },
+      session: {
+        metadata: { name: "alex-workstation" },
+        status: { isConnected: false },
+      },
+    },
+  } as never);
+
+  const markup = render();
+  expect(markup).toContain("Alex Smith");
+  expect(markup).toContain("alex@example.com");
+  expect(markup).toContain("alex-workstation");
+  expect(markup).toContain("AS");
 });

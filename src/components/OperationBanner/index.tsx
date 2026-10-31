@@ -1,10 +1,22 @@
+import Notice from "@/components/Notice";
 import { cancelOperation, getErrorMessage } from "@/features/daemon/actions";
-import { Operation_State, type Operation } from "@/gen/client/daemonv1";
+import {
+  Operation_State,
+  Operation_Type,
+  type Operation,
+} from "@/gen/client/daemonv1";
 import { getOperationTypeLabel, getPendingOpenURL } from "@/utils/daemon";
 import { openExternal } from "@/utils/native";
-import { Alert, Button, Loader } from "@mantine/core";
+import { Button } from "@mantine/core";
 import { useMutation } from "@tanstack/react-query";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Loader2, X } from "lucide-react";
+
+const PREPOSITIONS: Partial<Record<Operation_Type, string>> = {
+  [Operation_Type.AUTHENTICATE]: "to",
+  [Operation_Type.CONNECT]: "to",
+  [Operation_Type.DISCONNECT]: "from",
+  [Operation_Type.LOGOUT]: "of",
+};
 
 const OperationBanner = (props: { operation?: Operation }) => {
   const op = props.operation;
@@ -29,51 +41,50 @@ const OperationBanner = (props: { operation?: Operation }) => {
       : undefined;
 
   return (
-    <Alert
-      color="blue"
-      radius="md"
-      className="mb-6"
-      icon={<Loader size="xs" />}
-      title={`${getOperationTypeLabel(op.type)} ${op.domain}`}
+    <Notice
+      tone="sky"
+      className="mb-4"
+      icon={<Loader2 size={15} className="animate-spin" aria-hidden />}
+      title={[getOperationTypeLabel(op.type), PREPOSITIONS[op.type], op.domain]
+        .filter(Boolean)
+        .join(" ")}
+      actions={
+        (url || op.cancellable) && (
+          <>
+            {url && (
+              <Button
+                size="xs"
+                leftSection={<ExternalLink size={13} aria-hidden />}
+                loading={mutationOpen.isPending}
+                onClick={() => mutationOpen.mutate(url)}
+              >
+                Open the browser again
+              </Button>
+            )}
+            {op.cancellable && (
+              <Button
+                size="xs"
+                variant="default"
+                leftSection={<X size={13} aria-hidden />}
+                loading={mutationCancel.isPending}
+                onClick={() => mutationCancel.mutate(op.id)}
+              >
+                Cancel
+              </Button>
+            )}
+          </>
+        )
+      }
     >
-      <div className="flex flex-col gap-3">
-        {url && (
-          <span className="text-sm font-semibold">
-            Finish signing in using your web browser. The browser window opens
-            the Cluster Portal at your identity provider.
-          </span>
-        )}
-
-        <div className="flex flex-wrap items-center gap-3">
-          {url && (
-            <Button
-              size="xs"
-              leftSection={<ExternalLink size={14} aria-hidden />}
-              loading={mutationOpen.isPending}
-              onClick={() => mutationOpen.mutate(url)}
-            >
-              Open the browser again
-            </Button>
-          )}
-          {op.cancellable && (
-            <Button
-              size="xs"
-              variant="outline"
-              loading={mutationCancel.isPending}
-              onClick={() => mutationCancel.mutate(op.id)}
-            >
-              Cancel
-            </Button>
-          )}
+      {url
+        ? "Finish signing in using your web browser. The browser window opens the Cluster Portal at your identity provider."
+        : "This usually takes a few seconds."}
+      {(mutationOpen.isError || mutationCancel.isError) && (
+        <div className="mt-1 font-medium text-rose-700 dark:text-rose-300">
+          {getErrorMessage(mutationOpen.error ?? mutationCancel.error)}
         </div>
-
-        {(mutationOpen.isError || mutationCancel.isError) && (
-          <span className="text-xs font-semibold text-rose-600 dark:text-rose-400">
-            {getErrorMessage(mutationOpen.error ?? mutationCancel.error)}
-          </span>
-        )}
-      </div>
-    </Alert>
+      )}
+    </Notice>
   );
 };
 

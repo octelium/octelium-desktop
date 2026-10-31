@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 
 import {
+  getInitials,
   matchesAllTokens,
   printDuration,
   printResourceNameWithDisplay,
@@ -91,5 +92,26 @@ test("truncateUtf8", () => {
   }
   {
     expect(truncateUtf8("abcdef", 5, { suffix: "..." })).toEqual("ab...");
+  }
+});
+
+test("getInitials", () => {
+  {
+    expect(getInitials("Alex Smith")).toEqual("AS");
+  }
+  {
+    expect(getInitials("alex")).toEqual("A");
+  }
+  {
+    expect(getInitials("john.doe@example.com")).toEqual("JD");
+  }
+  {
+    expect(getInitials("  ")).toEqual("");
+  }
+  {
+    expect(getInitials(undefined)).toEqual("");
+  }
+  {
+    expect(getInitials("élodie durand")).toEqual("ÉD");
   }
 });

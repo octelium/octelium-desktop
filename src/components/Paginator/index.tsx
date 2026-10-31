@@ -1,38 +1,51 @@
 import { Pagination } from "@mantine/core";
 import type { ListResponseMeta } from "@octelium/apis/main/metav1";
+import type { ReactNode } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
-const Paginator = (props: { meta?: ListResponseMeta }) => {
+const Paginator = (props: { meta?: ListResponseMeta; children?: ReactNode }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const meta = props.meta;
 
-  if (!meta || meta.itemsPerPage <= 0) {
+  if (!meta || meta.totalCount <= 0) {
     return null;
   }
 
-  const totalPages = Math.ceil(meta.totalCount / meta.itemsPerPage);
-  if (totalPages <= 1) {
-    return null;
-  }
-
+  const itemsPerPage = Math.max(meta.itemsPerPage, 1);
+  const totalPages = Math.max(1, Math.ceil(meta.totalCount / itemsPerPage));
   const currentPage = Math.min(Math.max(meta.page + 1, 1), totalPages);
+  const first = (currentPage - 1) * itemsPerPage + 1;
+  const last = Math.min(meta.totalCount, currentPage * itemsPerPage);
 
   return (
-    <div className="flex w-full justify-center py-4">
-      <Pagination
-        aria-label="Pagination"
-        total={totalPages}
-        value={currentPage}
-        onChange={(value) => {
-          const nextParams = new URLSearchParams(searchParams);
-          nextParams.set("common.page", String(value - 1));
-          navigate(`${location.pathname}?${nextParams.toString()}`);
-        }}
-        size="sm"
-        radius="xl"
-      />
+    <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <span className="text-xs text-muted tabular-nums">
+          {totalPages > 1
+            ? `${first.toLocaleString()}–${last.toLocaleString()} of ${meta.totalCount.toLocaleString()}`
+            : `${meta.totalCount.toLocaleString()} ${meta.totalCount === 1 ? "item" : "items"}`}
+        </span>
+        {props.children}
+      </div>
+
+      {totalPages > 1 && (
+        <nav aria-label="Pagination">
+          <Pagination
+            total={totalPages}
+            value={currentPage}
+            onChange={(value) => {
+              const nextParams = new URLSearchParams(searchParams);
+              nextParams.set("common.page", String(value - 1));
+              navigate(`${location.pathname}?${nextParams.toString()}`);
+            }}
+            size="sm"
+            radius="md"
+            withEdges
+          />
+        </nav>
+      )}
     </div>
   );
 };

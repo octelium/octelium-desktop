@@ -3,6 +3,7 @@ use base64::Engine;
 use octelium_grpc::{Error as GrpcError, Target};
 use serde::{Deserialize, Serialize};
 use tauri::ipc::Channel;
+use tauri::window::Color;
 use tauri::{AppHandle, Manager, Runtime, State};
 use tauri_plugin_notification::NotificationExt;
 use url::Url;
@@ -90,10 +91,35 @@ pub struct AppInfo {
     pub daemon_address: String,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Appearance {
+    pub background: String,
+    pub foreground: String,
+    pub muted: String,
+}
+
 fn decode_request(arg: &str) -> Result<Vec<u8>, CommandError> {
     STANDARD
         .decode(arg)
         .map_err(|err| CommandError::invalid_argument(err.to_string()))
+}
+
+fn parse_color(arg: &str) -> Result<Color, CommandError> {
+    let hex = arg
+        .strip_prefix('#')
+        .filter(|itm| itm.len() == 6 && itm.chars().all(|c| c.is_ascii_hexdigit()))
+        .ok_or_else(|| CommandError::invalid_argument(format!("Invalid color: {arg}")))?;
+
+    let value = u32::from_str_radix(hex, 16)
+        .map_err(|err| CommandError::invalid_argument(err.to_string()))?;
+
+    Ok(Color(
+        (value >> 16) as u8,
+        (value >> 8) as u8,
+        value as u8,
+        255,
+    ))
 }
 
 #[tauri::command(rename_all = "camelCase")]
@@ -232,6 +258,33 @@ pub async fn get_system_theme<R: Runtime>(app: AppHandle<R>) -> Option<tauri::Th
 }
 
 #[tauri::command(rename_all = "camelCase")]
+pub async fn set_appearance<R: Runtime>(
+    app: AppHandle<R>,
+    appearance: Appearance,
+) -> Result<(), CommandError> {
+    let background = parse_color(&appearance.background)?;
+    parse_color(&appearance.foreground)?;
+    parse_color(&appearance.muted)?;
+
+    if let Some(window) = app.get_webview_window(crate::window::MAIN_WINDOW) {
+        window
+            .set_background_color(Some(background))
+            .map_err(|err| CommandError::internal(err.to_string()))?;
+    }
+
+    #[cfg(target_os = "linux")]
+    crate::theme::set_titlebar(
+        &app,
+        &appearance.background,
+        &appearance.foreground,
+        &appearance.muted,
+    )
+    .map_err(|err| CommandError::internal(err.to_string()))?;
+
+    Ok(())
+}
+
+#[tauri::command(rename_all = "camelCase")]
 pub async fn open_external(url: String) -> Result<(), CommandError> {
     let parsed = Url::parse(&url).map_err(|err| CommandError::invalid_argument(err.to_string()))?;
 
@@ -282,4 +335,21 @@ pub async fn quit_app<R: Runtime>(app: AppHandle<R>) -> Result<(), CommandError>
     app.state::<AppState>().cancel_every_call();
     app.exit(0);
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_color() {
+        assert_eq!(parse_color("#0c0c0e").unwrap(), Color(12, 12, 14, 255));
+        assert_eq!(parse_color("#F1F5F9").unwrap(), Color(241, 245, 249, 255));
+
+        for arg in [
+            "", "#", "0c0c0e", "#0c0c0", "#0c0c0e0", "#0c0c0g", "red", "#fff;}",
+        ] {
+            assert!(parse_color(arg).is_err(), "{arg}");
+        }
+    }
 }

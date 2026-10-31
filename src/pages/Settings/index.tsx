@@ -8,19 +8,16 @@ import Domain from "./Domain";
 
 type Section = "application" | "cluster" | "clusters";
 
-const details: Record<Section, { title: string; description: string }> = {
+const details: Record<Section, { description: string }> = {
   application: {
-    title: "Application settings",
     description:
       "Preferences for this desktop application, independent of any Cluster.",
   },
   cluster: {
-    title: "Cluster settings",
     description:
       "Connection policy for the selected Cluster. Changes apply on the next Connection.",
   },
   clusters: {
-    title: "Manage Clusters",
     description:
       "Add, select, sign out of, or remove Cluster domains from this device.",
   },
@@ -48,15 +45,11 @@ const Settings = () => {
   };
 
   return (
-    <div className="w-full">
-      <PageHeader
-        title={details[section].title}
-        description={details[section].description}
-      />
+    <div className="w-full max-w-3xl">
+      <PageHeader title="Settings" description={details[section].description} />
 
       <SegmentedControl
-        fullWidth
-        className="mb-5 max-w-xl"
+        className="mb-5"
         value={section}
         onChange={setSection}
         data={[

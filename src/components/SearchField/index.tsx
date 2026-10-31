@@ -74,11 +74,12 @@ const SearchField = (props: {
     <TextInput
       ref={inputRef}
       className={props.className}
-      label={props.label ?? "Search"}
+      aria-label={props.label ?? "Search"}
       placeholder={props.placeholder ?? "Search…"}
       value={text}
       spellCheck={false}
       autoComplete="off"
+      enterKeyHint="search"
       onChange={(event) => setText(event.currentTarget.value)}
       onKeyDown={(event) => {
         if (event.key === "Escape" && text !== "") {
@@ -86,22 +87,27 @@ const SearchField = (props: {
           clear();
         }
       }}
-      leftSection={<Search size={16} aria-hidden />}
+      leftSection={<Search size={15} strokeWidth={2.2} aria-hidden />}
+      leftSectionPointerEvents="none"
       rightSectionPointerEvents="all"
+      rightSectionWidth={text ? 36 : 30}
       rightSection={
         text ? (
           <button
             type="button"
             aria-label="Clear search"
-            className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-faint transition-colors hover:bg-surface-3 hover:text-strong"
-            onClick={clear}
+            className="flex h-6 w-6 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-3 hover:text-strong"
+            onClick={() => {
+              clear();
+              inputRef.current?.focus();
+            }}
           >
-            <X size={15} aria-hidden />
+            <X size={14} strokeWidth={2.4} aria-hidden />
           </button>
         ) : (
           <kbd
             aria-hidden
-            className="hidden rounded border border-line bg-surface-2 px-1.5 py-px text-[11px] font-bold text-faint sm:block"
+            className="hidden min-w-5 rounded border border-line bg-surface-2 px-1 py-0.5 text-center font-mono text-micro text-muted sm:inline-block"
           >
             /
           </kbd>

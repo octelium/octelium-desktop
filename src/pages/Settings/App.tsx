@@ -1,40 +1,68 @@
+import { SectionCard } from "@/components/Card";
+import ExternalLink from "@/components/ExternalLink";
+import Label from "@/components/Label";
+import Notice from "@/components/Notice";
+import SettingRow from "@/components/SettingRow";
 import { setPrefs } from "@/features/prefs/slice";
 import { useAppDispatch, useAppSelector } from "@/utils/hooks";
 import { isNative } from "@/utils/native";
 import type { Prefs, ThemeMode } from "@/utils/prefs";
-import { currentAppVersion, getLatestAppVersion } from "@/utils/version";
-import { Alert, Select, Switch } from "@mantine/core";
+import {
+  currentAppVersion,
+  getLatestAppVersion,
+  isNewerVersion,
+  RELEASES_PAGE_URL,
+} from "@/utils/version";
+import { SegmentedControl, Switch } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import {
   isPermissionGranted,
   requestPermission,
 } from "@tauri-apps/plugin-notification";
+import {
+  AlertTriangle,
+  AppWindow,
+  ArrowUpRight,
+  Bell,
+  Info,
+  Layers,
+  Monitor,
+  Moon,
+  Sun,
+  SunMoon,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 const THEMES = [
-  { value: "system", label: "System" },
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
+  {
+    value: "system",
+    label: (
+      <span className="flex items-center justify-center gap-1.5">
+        <Monitor size={13} aria-hidden />
+        System
+      </span>
+    ),
+  },
+  {
+    value: "light",
+    label: (
+      <span className="flex items-center justify-center gap-1.5">
+        <Sun size={13} aria-hidden />
+        Light
+      </span>
+    ),
+  },
+  {
+    value: "dark",
+    label: (
+      <span className="flex items-center justify-center gap-1.5">
+        <Moon size={13} aria-hidden />
+        Dark
+      </span>
+    ),
+  },
 ];
-
-const Row = (props: {
-  title: string;
-  description?: string;
-  children?: React.ReactNode;
-}) => (
-  <div className="flex flex-col gap-3 border-b border-line py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
-    <div className="min-w-0">
-      <div className="text-sm font-bold text-strong">{props.title}</div>
-      {props.description && (
-        <div className="mt-0.5 text-sm font-medium text-muted">
-          {props.description}
-        </div>
-      )}
-    </div>
-    <div className="flex-none">{props.children}</div>
-  </div>
-);
 
 const AppSettings = () => {
   const dispatch = useAppDispatch();
@@ -47,6 +75,10 @@ const AppSettings = () => {
     staleTime: 6 * 60 * 60 * 1000,
     retry: false,
   });
+  const updateAvailable = isNewerVersion(
+    latestVersionQuery.data,
+    currentAppVersion,
+  );
 
   const set = (arg: Partial<Prefs>) => {
     dispatch(setPrefs({ prefs: { ...prefs, ...arg } }));
@@ -108,58 +140,42 @@ const AppSettings = () => {
   };
 
   return (
-    <div className="rounded-xl border border-line bg-surface p-6 shadow-xs">
-      <h2 className="text-sm font-extrabold tracking-tight text-strong">
-        Application preferences
-      </h2>
-      <p className="mt-1 text-sm font-medium text-muted">
-        These preferences belong to this desktop application. They never affect
-        the Octelium daemon nor your Cluster Sessions.
-      </p>
-
+    <div className="flex flex-col gap-4">
       {(error || prefsError) && (
-        <Alert color="red" radius="md" className="mt-4" title="Could not apply">
+        <Notice
+          tone="rose"
+          icon={<AlertTriangle size={15} aria-hidden />}
+          title="Could not apply"
+        >
           {error ?? prefsError}
-        </Alert>
+        </Notice>
       )}
 
-      <div className="mt-3">
-        <Row
-          title="Current version"
-          description={
-            currentAppVersion
-              ? "The version installed on this device."
-              : "This build was not created from a release tag."
-          }
+      <SectionCard
+        title="Appearance"
+        description="How this application looks on this device"
+        icon={<SunMoon size={14} strokeWidth={2.25} />}
+      >
+        <SettingRow
+          title="Theme"
+          description="System follows the appearance of your operating system."
         >
-          <span className="text-sm font-bold text-strong">
-            {currentAppVersion ?? "Development build"}
-          </span>
-        </Row>
-
-        {latestVersionQuery.data && (
-          <Row
-            title="Latest release"
-            description="The latest published release reported by GitHub."
-          >
-            <span className="text-sm font-bold text-strong">
-              {latestVersionQuery.data}
-            </span>
-          </Row>
-        )}
-
-        <Row title="Theme">
-          <Select
+          <SegmentedControl
             aria-label="Theme"
-            className="w-[150px]"
+            size="sm"
             data={THEMES}
-            allowDeselect={false}
             value={prefs.theme}
-            onChange={(value) => set({ theme: (value ?? "system") as ThemeMode })}
+            onChange={(value) => set({ theme: value as ThemeMode })}
           />
-        </Row>
+        </SettingRow>
+      </SectionCard>
 
-        <Row
+      <SectionCard
+        title="Startup and window"
+        description="How the application starts and closes"
+        icon={<AppWindow size={14} strokeWidth={2.25} />}
+      >
+        <SettingRow
           title="Launch at login"
           description="Start the Octelium application when you sign in to this machine."
         >
@@ -170,23 +186,9 @@ const AppSettings = () => {
               void setLaunchAtLogin(event.currentTarget.checked)
             }
           />
-        </Row>
+        </SettingRow>
 
-        <Row
-          title="Start minimized"
-          description="Keep the window hidden in the system tray at startup."
-        >
-          <Switch
-            aria-label="Start minimized"
-            disabled={!prefs.closeToTray}
-            checked={prefs.startMinimized}
-            onChange={(event) =>
-              set({ startMinimized: event.currentTarget.checked })
-            }
-          />
-        </Row>
-
-        <Row
+        <SettingRow
           title="Close to the tray"
           description="Closing the window hides it instead of quitting. Your Connections keep running either way."
         >
@@ -201,22 +203,52 @@ const AppSettings = () => {
               });
             }}
           />
-        </Row>
+        </SettingRow>
 
-        <Row
-          title="Notifications"
+        <SettingRow
+          title="Start minimized"
+          description={
+            prefs.closeToTray
+              ? "Keep the window hidden in the system tray at startup."
+              : "Requires closing to the tray."
+          }
+        >
+          <Switch
+            aria-label="Start minimized"
+            disabled={!prefs.closeToTray}
+            checked={prefs.startMinimized}
+            onChange={(event) =>
+              set({ startMinimized: event.currentTarget.checked })
+            }
+          />
+        </SettingRow>
+      </SectionCard>
+
+      <SectionCard
+        title="Notifications"
+        description="Desktop notifications of this application"
+        icon={<Bell size={14} strokeWidth={2.25} />}
+      >
+        <SettingRow
+          title="Connection notifications"
           description="Show a desktop notification whenever a Connection is established or lost."
         >
           <Switch
-            aria-label="Notifications"
+            aria-label="Connection notifications"
             checked={prefs.notifications}
             onChange={(event) =>
               void setNotifications(event.currentTarget.checked)
             }
           />
-        </Row>
+        </SettingRow>
+      </SectionCard>
 
-        <Row
+      <SectionCard
+        title="Clusters"
+        description="How the Clusters of this device are presented"
+        icon={<Layers size={14} strokeWidth={2.25} />}
+      >
+        <SettingRow
           title="Multiple Clusters"
           description="Show every configured domain in the Cluster switcher. Most people only need one domain."
         >
@@ -227,8 +259,53 @@ const AppSettings = () => {
               set({ multiCluster: event.currentTarget.checked })
             }
           />
-        </Row>
-      </div>
+        </SettingRow>
+      </SectionCard>
+
+      <SectionCard
+        title="About"
+        description="Octelium is free and open source software"
+        icon={<Info size={14} strokeWidth={2.25} />}
+      >
+        <SettingRow
+          title="Current version"
+          description={
+            currentAppVersion
+              ? "The version installed on this device."
+              : "This build was not created from a release tag."
+          }
+        >
+          <span className="font-mono text-xs font-medium text-strong" data-selectable>
+            {currentAppVersion ?? "Development build"}
+          </span>
+        </SettingRow>
+
+        {latestVersionQuery.data && (
+          <SettingRow
+            title="Latest release"
+            description={
+              updateAvailable
+                ? "A newer release is available for download."
+                : "The latest published release reported by GitHub."
+            }
+          >
+            <div className="flex items-center gap-2">
+              {updateAvailable && (
+                <Label tone="sky" dot>
+                  Update available
+                </Label>
+              )}
+              <ExternalLink
+                href={RELEASES_PAGE_URL}
+                className="inline-flex items-center gap-1 rounded-md font-mono text-xs font-medium text-strong hover:underline"
+              >
+                {latestVersionQuery.data}
+                <ArrowUpRight size={12} aria-hidden />
+              </ExternalLink>
+            </div>
+          </SettingRow>
+        )}
+      </SectionCard>
     </div>
   );
 };

@@ -1,0 +1,23 @@
+{
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Octelium",
+        "width": 1100,
+        "height": 760,
+        "minWidth": 780,
+        "minHeight": 560,
+        "resizable": true,
+        "visible": false,
+        "center": true,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "trafficLightPosition": {
+          "x": 18,
+          "y": 24
+        }
+      }
+    ]
+  }
+}

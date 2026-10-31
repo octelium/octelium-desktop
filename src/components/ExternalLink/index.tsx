@@ -1,6 +1,6 @@
 import { openExternal } from "@/utils/native";
 import type { ReactNode } from "react";
-import { twMerge } from "tailwind-merge";
+import { twMerge } from "@/utils/tailwind";
 
 const ExternalLink = (props: {
   href: string;
@@ -12,7 +12,8 @@ const ExternalLink = (props: {
     <a
       href={props.href}
       title={props.title}
-      className={twMerge("cursor-pointer", props.className)}
+      draggable={false}
+      className={twMerge("no-underline", props.className)}
       onClick={(event) => {
         event.preventDefault();
         void openExternal(props.href).catch(() => {});

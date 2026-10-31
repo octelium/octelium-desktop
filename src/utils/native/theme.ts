@@ -5,6 +5,25 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow, type Theme } from "@tauri-apps/api/window";
 import { platform } from "@tauri-apps/plugin-os";
 
+export type NativeAppearance = {
+  background: string;
+  foreground: string;
+  muted: string;
+};
+
+export const NATIVE_APPEARANCE: Record<"light" | "dark", NativeAppearance> = {
+  light: {
+    background: "#f1f5f9",
+    foreground: "#0f172a",
+    muted: "#64748b",
+  },
+  dark: {
+    background: "#0c0c0e",
+    foreground: "#ececef",
+    muted: "#99999c",
+  },
+};
+
 export const setNativeTheme = async (
   theme: ThemeMode,
   prefersDark: boolean,
@@ -20,6 +39,10 @@ export const setNativeTheme = async (
         ? null
         : theme,
   );
+
+  await invoke("set_appearance", {
+    appearance: NATIVE_APPEARANCE[resolveTheme(theme, prefersDark)],
+  });
 };
 
 export const watchSystemTheme = (

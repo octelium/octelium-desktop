@@ -38,3 +38,15 @@ export const isServiceWebBrowsable = (arg: UserPB.Service): boolean => {
       return false;
   }
 };
+
+export const getUserDisplayName = (
+  arg?: UserPB.GetStatusResponse,
+): string | undefined =>
+  arg?.user?.metadata?.displayName?.trim() ||
+  arg?.user?.metadata?.name?.trim() ||
+  undefined;
+
+export const getUserPicURL = (
+  arg?: UserPB.GetStatusResponse,
+): string | undefined =>
+  arg?.session?.metadata?.picURL || arg?.user?.metadata?.picURL || undefined;
