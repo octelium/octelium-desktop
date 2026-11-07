@@ -22,10 +22,10 @@ export const InfoItem = (props: {
 }) => {
   return (
     <div className={twMerge("min-w-0 text-left", props.className)}>
-      <dt className="text-micro font-medium tracking-[0.06em] text-muted uppercase">
+      <dt className="text-xs font-normal text-muted">
         {props.title}
       </dt>
-      <dd className="m-0 mt-1 min-w-0 text-ui font-medium break-words text-strong">
+      <dd className="m-0 mt-0.5 min-w-0 text-ui font-medium break-words text-strong">
         {props.children}
       </dd>
     </div>

@@ -35,14 +35,9 @@ const AccountMenu = (props: { onSignOut: (domain: string) => void }) => {
           aria-label={
             displayName ? `Account menu for ${displayName}` : "Account menu"
           }
-          className="flex h-9 min-w-0 flex-none items-center gap-2 rounded-lg py-1 pr-1.5 pl-1 outline-none transition-colors hover:bg-surface-3 focus-visible:ring-2 focus-visible:ring-focus data-[expanded]:bg-surface-3"
+          className="flex h-10 min-w-0 flex-none items-center gap-2 rounded-lg px-2 outline-none transition-colors hover:bg-surface-active/50 focus-visible:ring-2 focus-visible:ring-focus data-[expanded]:bg-surface-active/50"
         >
           <Avatar src={getUserPicURL(status)} name={displayName} size="sm" />
-          {displayName && (
-            <span className="hidden max-w-[160px] truncate text-ui font-medium text-strong md:block">
-              {displayName}
-            </span>
-          )}
           <ChevronDown
             size={13}
             strokeWidth={2.25}
@@ -56,15 +51,15 @@ const AccountMenu = (props: { onSignOut: (domain: string) => void }) => {
         <div className="flex min-w-0 items-center gap-3 px-2.5 pt-2 pb-2.5">
           <Avatar src={getUserPicURL(status)} name={displayName} size="md" />
           <div className="flex min-w-0 flex-col">
-            <span className="truncate text-ui font-medium text-strong">
+            <span className="truncate text-ui font-semibold text-strong">
               {displayName ?? "Signed in"}
             </span>
             {email && (
-              <span className="truncate text-xs text-muted" data-selectable>
+              <span className="truncate text-xs font-normal text-muted" data-selectable>
                 {email}
               </span>
             )}
-            <span className="truncate text-xs text-faint">{domain}</span>
+            <span className="truncate text-xs font-normal text-muted">{domain}</span>
           </div>
         </div>
         <Menu.Divider />

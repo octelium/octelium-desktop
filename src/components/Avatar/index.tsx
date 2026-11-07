@@ -5,8 +5,8 @@ import { twMerge } from "@/utils/tailwind";
 
 const SIZES = {
   xs: "h-6 w-6 text-[0.5625rem]",
-  sm: "h-7 w-7 text-[0.625rem]",
-  md: "h-9 w-9 text-xs",
+  sm: "h-8 w-8 text-[0.625rem]",
+  md: "h-10 w-10 text-xs",
   lg: "h-12 w-12 text-sm",
 };
 
@@ -24,7 +24,7 @@ const Avatar = (props: {
     <span
       aria-hidden
       className={twMerge(
-        "flex flex-none items-center justify-center overflow-hidden rounded-full bg-zinc-700 font-medium text-white ring-1 ring-black/5 dark:bg-zinc-600 dark:ring-white/10",
+        "flex flex-none items-center justify-center overflow-hidden rounded-full bg-body font-semibold text-surface",
         SIZES[props.size ?? "md"],
         props.className,
       )}

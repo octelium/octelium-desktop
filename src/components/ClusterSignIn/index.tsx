@@ -1,5 +1,6 @@
-import Mark from "@/assets/mark.svg?react";
-import { Card, SectionCard } from "@/components/Card";
+import ActionButton from "@/components/ActionButton";
+import { SectionCard } from "@/components/Card";
+import LogoMain from "@/components/LogoMain";
 import Notice from "@/components/Notice";
 import {
   authenticateBrowser,
@@ -18,7 +19,7 @@ import {
   validateDomain,
 } from "@/utils/daemon";
 import { openExternal } from "@/utils/native";
-import { Button, Collapse, PasswordInput, TextInput } from "@mantine/core";
+import { Collapse, PasswordInput, TextInput } from "@mantine/core";
 import { useMutation } from "@tanstack/react-query";
 import {
   AlertCircle,
@@ -107,7 +108,7 @@ const ClusterSignIn = (props: Props) => {
       {mutation.isError && (
         <Notice
           tone="rose"
-          className={props.domain ? "" : "mt-3"}
+          className={props.domain ? "mb-3" : "mt-3 mb-3"}
           icon={<AlertCircle size={15} aria-hidden />}
           title="Could not start sign in"
         >
@@ -115,17 +116,15 @@ const ClusterSignIn = (props: Props) => {
         </Notice>
       )}
 
-      <Button
-        fullWidth
-        size="md"
-        className={props.domain && !mutation.isError ? "mt-0" : "mt-3"}
-        loading={mutation.isPending && mutation.variables === "browser"}
-        disabled={mutation.isPending || busy}
-        leftSection={<LogIn size={16} aria-hidden />}
-        onClick={() => mutation.mutate("browser")}
-      >
-        Continue in browser
-      </Button>
+      <div className={props.domain || mutation.isError ? "" : "mt-3"}>
+        <ActionButton
+          label="Continue in browser"
+          Icon={LogIn}
+          pending={mutation.isPending && mutation.variables === "browser"}
+          disabled={mutation.isPending || busy}
+          onClick={() => mutation.mutate("browser")}
+        />
+      </div>
 
       <button
         type="button"
@@ -146,7 +145,7 @@ const ClusterSignIn = (props: Props) => {
       </button>
 
       <Collapse expanded={advanced} transitionDuration={200}>
-        <div className="mt-3 flex flex-col gap-3 border-t border-line-subtle pt-4">
+        <div className="mt-3 flex flex-col gap-3">
           <PasswordInput
             label="Authentication Token"
             placeholder="Paste the Token"
@@ -160,16 +159,14 @@ const ClusterSignIn = (props: Props) => {
               }
             }}
           />
-          <Button
-            fullWidth
-            variant="default"
-            loading={mutation.isPending && mutation.variables === "token"}
+          <ActionButton
+            label="Sign in with the Token"
+            Icon={KeyRound}
+            quiet
+            pending={mutation.isPending && mutation.variables === "token"}
             disabled={mutation.isPending || busy}
-            leftSection={<KeyRound size={14} aria-hidden />}
             onClick={() => mutation.mutate("token")}
-          >
-            Sign in with the Token
-          </Button>
+          />
         </div>
       </Collapse>
     </>
@@ -188,25 +185,23 @@ const ClusterSignIn = (props: Props) => {
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-[420px] flex-col items-center py-8 text-center sm:py-12">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand text-brand-fg dark:ring-1 dark:ring-line-strong dark:ring-inset shadow-raised">
-        <Mark className="h-9 w-9" aria-label="Octelium" />
-      </div>
+    <section className="m-auto flex w-full max-w-[22rem] flex-col py-4">
+      <header className="mb-6 flex flex-col items-center text-center">
+        <LogoMain />
+        <h1 className="text-2xl font-bold tracking-[-0.01em] text-balance text-strong">
+          {props.title ??
+            (props.domain ? `Sign in to ${props.domain}` : "Sign in to Octelium")}
+        </h1>
+        {(props.description || !props.domain) && (
+          <p className="mt-2 text-ui leading-6 font-normal text-muted">
+            {props.description ?? "Enter your Cluster domain to continue."}
+          </p>
+        )}
+      </header>
 
-      <h1 className="mt-6 text-xl font-bold tracking-[-0.015em] text-strong">
-        {props.title ??
-          (props.domain ? `Sign in to ${props.domain}` : "Welcome to Octelium")}
-      </h1>
-      <p className="mt-1.5 max-w-sm text-ui text-muted">
-        {props.description ??
-          (props.domain
-            ? "Continue in your browser to renew the Session of this Cluster."
-            : "Enter your Cluster domain to securely sign in and connect this device.")}
-      </p>
+      {form}
 
-      <Card className="mt-6 w-full p-5 text-left">{form}</Card>
-
-      <p className="mt-4 max-w-sm text-xs text-faint">
+      <p className="mt-4 text-center text-xs leading-5 font-normal text-muted">
         Signing in opens the Cluster Portal in your default browser.
       </p>
     </section>

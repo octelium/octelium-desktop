@@ -4,7 +4,7 @@ export const twMerge = extendTailwindMerge({
   extend: {
     theme: {
       text: ["micro", "ui"],
-      shadow: ["card", "raised", "overlay"],
+      shadow: ["surface", "card", "raised", "overlay", "button", "button-hover", "logo"],
     },
   },
 });

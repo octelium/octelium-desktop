@@ -24,7 +24,7 @@ export const ResourceListSkeleton = (props: { count?: number }) => (
   >
     {Array.from({ length: props.count ?? 5 }, (_, index) => (
       <div
-        className="flex items-start gap-3 rounded-xl border border-line bg-surface px-4 py-3.5 shadow-card"
+        className="flex items-start gap-3 rounded-xl border border-line bg-surface px-4 py-3.5 shadow-surface"
         key={index}
       >
         <div className="h-9 w-9 flex-none animate-pulse rounded-lg bg-surface-3" />
@@ -57,7 +57,7 @@ export const ErrorState = (props: {
       >
         <AlertCircle size={18} strokeWidth={2} />
       </div>
-      <p className="text-ui font-medium text-strong">
+      <p className="text-ui font-semibold text-strong">
         {props.title ?? "Something went wrong"}
       </p>
       <p className="mt-1 max-w-sm text-xs leading-5 text-muted">
@@ -92,7 +92,7 @@ export const EmptyState = (props: {
       >
         {props.icon ?? <Inbox size={18} strokeWidth={2} />}
       </div>
-      <h2 className="text-ui font-medium text-strong">{props.title}</h2>
+      <h2 className="text-ui font-semibold text-strong">{props.title}</h2>
       {props.message && (
         <p className="mt-1 max-w-sm text-xs leading-5 text-muted">
           {props.message}

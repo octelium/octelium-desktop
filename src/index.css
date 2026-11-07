@@ -24,10 +24,15 @@
   --color-focus: var(--oct-focus);
   --color-brand: var(--oct-brand);
   --color-brand-fg: var(--oct-brand-fg);
+  --color-brand-hover: var(--oct-brand-hover);
 
+  --shadow-surface: var(--oct-shadow-surface);
   --shadow-card: var(--oct-shadow-card);
   --shadow-raised: var(--oct-shadow-raised);
   --shadow-overlay: var(--oct-shadow-overlay);
+  --shadow-button: var(--oct-shadow-button);
+  --shadow-button-hover: var(--oct-shadow-button-hover);
+  --shadow-logo: var(--oct-shadow-logo);
 
   --text-micro: 0.6875rem;
   --text-micro--line-height: 1rem;
@@ -35,13 +40,19 @@
   --text-ui--line-height: 1.25rem;
 
   --font-sans:
-    "Ubuntu", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Cascadia Mono",
-    "Ubuntu Mono", "DejaVu Sans Mono", "Liberation Mono", monospace;
+    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Cascadia Mono", "DejaVu Sans Mono", "Liberation Mono", monospace;
+
+  --font-weight-normal: 500;
+  --font-weight-medium: 600;
+  --font-weight-semibold: 700;
 
   --default-transition-duration: 150ms;
+
+  --page-max-width: 1440px;
 
   --animate-page-in: page-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
   --animate-pulse-ring: pulse-ring 2s ease-out infinite;
@@ -79,18 +90,28 @@
   --oct-body: #334155;
   --oct-muted: #64748b;
   --oct-faint: #94a3b8;
-  --oct-inverse: #18181b;
+  --oct-inverse: #2e2e2e;
   --oct-inverse-fg: #ffffff;
-  --oct-inverse-hover: #27272a;
+  --oct-inverse-hover: #242424;
   --oct-focus: #94a3b8;
-  --oct-switch-on: #18181b;
+  --oct-switch-on: #2e2e2e;
   --oct-segment: #ffffff;
   --oct-brand: #18181b;
   --oct-brand-fg: #ffffff;
+  --oct-brand-hover: #000000;
+  --oct-logo-disc: #18181b;
 
+  --oct-shadow-surface: 0 0 #0000;
   --oct-shadow-card: 0 1px 2px rgb(15 23 42 / 0.05);
   --oct-shadow-raised: 0 4px 12px rgb(15 23 42 / 0.08);
   --oct-shadow-overlay: 0 16px 40px rgb(15 23 42 / 0.14);
+  --oct-shadow-button:
+    0 1px 2px rgb(15 23 42 / 0.2), 0 8px 16px -8px rgb(15 23 42 / 0.4);
+  --oct-shadow-button-hover:
+    0 1px 2px rgb(15 23 42 / 0.24), 0 12px 20px -8px rgb(15 23 42 / 0.5);
+  --oct-shadow-logo:
+    0 1px 2px rgb(15 23 42 / 0.3), 0 12px 24px -8px rgb(15 23 42 / 0.35),
+    0 32px 56px -20px rgb(15 23 42 / 0.45);
 
   color-scheme: light;
   color: var(--oct-strong);
@@ -102,30 +123,37 @@
 }
 
 [data-theme="dark"] {
-  --oct-app: oklch(15.5% 0.004 286);
-  --oct-surface: oklch(20.5% 0.005 286);
-  --oct-surface-2: oklch(18.5% 0.004 286);
-  --oct-surface-3: oklch(24% 0.005 286);
-  --oct-surface-active: oklch(30% 0.005 286);
-  --oct-line: oklch(29.5% 0.005 286);
-  --oct-line-subtle: oklch(24.5% 0.004 286);
-  --oct-line-strong: oklch(38% 0.006 286);
-  --oct-strong: oklch(94.5% 0.004 286);
-  --oct-body: oklch(85% 0.005 286);
-  --oct-muted: oklch(68.5% 0.007 286);
-  --oct-faint: oklch(58% 0.008 286);
-  --oct-inverse: oklch(94.5% 0.004 286);
-  --oct-inverse-fg: oklch(20% 0.005 286);
-  --oct-inverse-hover: oklch(98% 0.002 286);
-  --oct-focus: oklch(58% 0.008 286);
-  --oct-switch-on: oklch(62% 0.008 286);
-  --oct-segment: oklch(32% 0.005 286);
-  --oct-brand: oklch(30% 0.005 286);
-  --oct-brand-fg: oklch(96% 0.003 286);
+  --oct-app: oklch(13.5% 0.002 270);
+  --oct-surface: oklch(17% 0.002 270);
+  --oct-surface-2: oklch(20% 0.002 270);
+  --oct-surface-3: oklch(22.5% 0.002 270);
+  --oct-surface-active: oklch(26% 0.002 270);
+  --oct-line: oklch(26% 0.002 270);
+  --oct-line-subtle: oklch(22.5% 0.002 270);
+  --oct-line-strong: oklch(33% 0.002 270);
+  --oct-strong: oklch(96% 0.002 270);
+  --oct-body: oklch(87% 0.002 270);
+  --oct-muted: oklch(71% 0.002 270);
+  --oct-faint: oklch(62% 0.002 270);
+  --oct-inverse: #e4e4e6;
+  --oct-inverse-fg: oklch(17% 0.002 270);
+  --oct-inverse-hover: #e9e9eb;
+  --oct-focus: oklch(62% 0.002 270);
+  --oct-switch-on: oklch(62% 0.002 270);
+  --oct-segment: oklch(17% 0.002 270);
+  --oct-brand: oklch(26% 0.002 270);
+  --oct-brand-fg: oklch(96% 0.002 270);
+  --oct-brand-hover: oklch(33% 0.002 270);
+  --oct-logo-disc: transparent;
 
-  --oct-shadow-card: 0 1px 2px rgb(0 0 0 / 0.5);
-  --oct-shadow-raised: 0 4px 12px rgb(0 0 0 / 0.55);
+  --oct-shadow-surface: inset 0 1px 0 rgb(255 255 255 / 0.045);
+  --oct-shadow-card: inset 0 1px 0 rgb(255 255 255 / 0.045);
+  --oct-shadow-raised:
+    inset 0 1px 0 rgb(255 255 255 / 0.045), 0 8px 24px rgb(0 0 0 / 0.5);
   --oct-shadow-overlay: 0 16px 40px rgb(0 0 0 / 0.7);
+  --oct-shadow-button: 0 0 #0000;
+  --oct-shadow-button-hover: 0 0 #0000;
+  --oct-shadow-logo: 0 0 #0000;
 
   color-scheme: dark;
 }
@@ -146,10 +174,28 @@ body {
 body {
   margin: 0;
   font-family: var(--font-sans);
+  font-weight: 500;
   background-color: var(--oct-app);
   cursor: default;
   -webkit-user-select: none;
   user-select: none;
+}
+
+body,
+button,
+input,
+select,
+textarea {
+  word-spacing: 0.06em;
+}
+
+code,
+kbd,
+pre,
+.font-mono {
+  font-variant-ligatures: none;
+  font-weight: 400;
+  word-spacing: normal;
 }
 
 input,
@@ -188,14 +234,14 @@ svg {
 
 .mantine-Input-input::placeholder {
   color: var(--oct-faint);
-  font-weight: 400;
+  font-weight: 500;
 }
 
 .mantine-Input-input:focus,
 .mantine-Input-input[data-focus],
 .mantine-Input-input:focus-within {
   border-color: var(--oct-strong);
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--oct-strong) 10%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--oct-strong) 12%, transparent);
   outline: none;
 }
 

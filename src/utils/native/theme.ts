@@ -18,9 +18,9 @@ export const NATIVE_APPEARANCE: Record<"light" | "dark", NativeAppearance> = {
     muted: "#64748b",
   },
   dark: {
-    background: "#0c0c0e",
-    foreground: "#ececef",
-    muted: "#99999c",
+    background: "#080809",
+    foreground: "#f2f2f3",
+    muted: "#a1a1a3",
   },
 };
 

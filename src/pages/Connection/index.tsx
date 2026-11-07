@@ -114,7 +114,7 @@ const Account = (props: { domain: string }) => {
       <div className="flex min-w-0 items-center gap-3">
         <Avatar src={getUserPicURL(status)} name={displayName} size="lg" />
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-strong">
+          <p className="truncate text-base font-semibold text-strong">
             {displayName ?? "Unknown User"}
           </p>
           {email && (
@@ -125,7 +125,7 @@ const Account = (props: { domain: string }) => {
         </div>
       </div>
 
-      <InfoGrid className="mt-4 border-t border-line-subtle pt-4">
+      <InfoGrid className="mt-4 border-t border-line-subtle pt-4 lg:grid-cols-2">
         {name && (
           <InfoItem title="User">
             <CopyText value={name} label="Copy the User name" />
@@ -245,13 +245,13 @@ const Connection = () => {
         onSignIn={() => mutationAuth.mutate()}
       />
 
-      <div className="flex flex-col gap-4">
-        <Card className="overflow-hidden">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+        <Card className="overflow-hidden lg:col-span-2">
           <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
             <div
               aria-hidden
               className={twMerge(
-                "flex h-12 w-12 flex-none items-center justify-center rounded-2xl border transition-colors duration-300",
+                "flex h-12 w-12 flex-none items-center justify-center rounded-xl border transition-colors duration-300",
                 ORB_TONES[tone],
               )}
             >
@@ -265,10 +265,10 @@ const Connection = () => {
             </div>
 
             <div className="min-w-0 flex-1" aria-live="polite">
-              <div className="text-lg leading-tight font-bold tracking-tight text-strong">
+              <div className="text-lg leading-tight font-semibold tracking-[-0.01em] text-strong">
                 {getConnectionStateLabel(connection?.state)}
               </div>
-              <div className="mt-1 truncate text-ui text-muted">
+              <div className="mt-1 truncate text-ui font-normal text-muted">
                 {connected && connection?.connectedAt ? (
                   <>
                     Secured for <Elapsed since={connection.connectedAt} />
@@ -347,7 +347,7 @@ const Connection = () => {
             description="The local network configuration of this Connection"
             icon={<Network size={14} strokeWidth={2.25} />}
           >
-            <InfoGrid>
+            <InfoGrid className="lg:grid-cols-2">
               <InfoItem title="Device">
                 <Mono>{connection?.deviceName || "—"}</Mono>
               </InfoItem>
@@ -359,7 +359,7 @@ const Connection = () => {
               </InfoItem>
 
               {addresses.length > 0 && (
-                <InfoItem title="Addresses" className="sm:col-span-2 lg:col-span-3">
+                <InfoItem title="Addresses" className="sm:col-span-2">
                   <div className="flex flex-wrap gap-x-6 gap-y-1">
                     {addresses.map((itm) => (
                       <CopyText key={itm} value={itm} label="Copy the address" />

@@ -35,7 +35,7 @@ const Notice = (props: {
     <div
       role={tone === "rose" ? "alert" : undefined}
       className={twMerge(
-        "flex w-full items-start gap-2.5 rounded-xl border px-3.5 py-3",
+        "flex w-full items-start gap-2.5 rounded-lg border px-3.5 py-3",
         TONES[tone],
         props.className,
       )}
@@ -47,7 +47,7 @@ const Notice = (props: {
       )}
       <div className="min-w-0 flex-1">
         {props.title && (
-          <div className="text-ui font-medium">{props.title}</div>
+          <div className="text-ui font-semibold">{props.title}</div>
         )}
         {props.children && (
           <div

@@ -42,7 +42,7 @@ const CopyText = (props: {
         <span
           className={twMerge(
             "min-w-0 [overflow-wrap:anywhere]",
-            props.mono !== false && "font-mono text-xs font-medium",
+            props.mono !== false && "font-mono text-ui",
           )}
           data-selectable
         >

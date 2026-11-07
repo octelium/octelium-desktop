@@ -14,7 +14,7 @@ const SettingRow = (props: {
     )}
   >
     <div className="min-w-0">
-      <div className="text-ui font-medium text-strong">{props.title}</div>
+      <div className="text-ui font-semibold text-strong">{props.title}</div>
       {props.description && (
         <div className="mt-0.5 text-xs leading-5 text-muted">
           {props.description}

@@ -45,7 +45,7 @@ const Settings = () => {
   };
 
   return (
-    <div className="w-full max-w-3xl">
+    <div className="w-full">
       <PageHeader title="Settings" description={details[section].description} />
 
       <SegmentedControl
@@ -64,8 +64,16 @@ const Settings = () => {
       />
 
       {section === "application" && <AppSettings />}
-      {section === "cluster" && <Domain />}
-      {section === "clusters" && <Clusters embedded />}
+      {section === "cluster" && (
+        <div className="max-w-3xl">
+          <Domain />
+        </div>
+      )}
+      {section === "clusters" && (
+        <div className="max-w-3xl">
+          <Clusters embedded />
+        </div>
+      )}
     </div>
   );
 };

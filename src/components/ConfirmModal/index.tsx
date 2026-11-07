@@ -38,7 +38,7 @@ const ConfirmModal = (props: {
               {props.icon}
             </span>
           )}
-          <Modal.Title className="text-ui font-medium text-strong">
+          <Modal.Title className="text-ui font-semibold text-strong">
             {props.title}
           </Modal.Title>
         </div>

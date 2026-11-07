@@ -22,7 +22,7 @@ import {
 } from "@mantine/core";
 
 const FONT =
-  'Ubuntu, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+  '"Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
 
 const SIZE_MICRO = "0.6875rem";
 const SIZE_META = "0.75rem";
@@ -76,32 +76,32 @@ export const cssVariablesResolver: CSSVariablesResolver = () => ({
 const labelStyles = {
   label: {
     fontSize: SIZE_META,
-    fontWeight: 500,
+    fontWeight: 700,
     color: "var(--oct-body)",
     marginBottom: "4px",
   },
   description: {
     fontSize: SIZE_META,
-    fontWeight: 400,
+    fontWeight: 500,
     lineHeight: 1.45,
     color: "var(--oct-muted)",
     marginBottom: "6px",
   },
   error: {
     fontSize: SIZE_META,
-    fontWeight: 500,
+    fontWeight: 600,
   },
 };
 
 const inputStyles = {
   input: {
     fontSize: SIZE_BODY,
-    fontWeight: 400,
+    fontWeight: 500,
     backgroundColor: "var(--oct-surface)",
-    border: "1px solid var(--oct-line-strong)",
+    border: "1px solid var(--oct-line)",
     borderRadius: "8px",
     color: "var(--oct-strong)",
-    minHeight: "36px",
+    minHeight: "38px",
     transition: "border-color 150ms, box-shadow 150ms",
   },
 };
@@ -114,12 +114,13 @@ const comboboxProps = {
     dropdown: {
       border: "1px solid var(--oct-line)",
       boxShadow: "var(--oct-shadow-overlay)",
-      padding: "4px",
+      padding: "6px",
     },
     option: {
       fontSize: SIZE_BODY,
+      fontWeight: 500,
       borderRadius: "7px",
-      minHeight: "32px",
+      minHeight: "34px",
       transition: "background-color 150ms, color 150ms",
     },
   },
@@ -128,7 +129,7 @@ const comboboxProps = {
 const theme = createTheme({
   fontFamily: FONT,
   fontFamilyMonospace:
-    'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',
+    '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
   headings: { fontFamily: FONT },
 
   colors: {
@@ -144,7 +145,7 @@ const theme = createTheme({
       defaultProps: { variant: "filled" },
       styles: {
         root: {
-          fontWeight: 500,
+          fontWeight: 700,
           fontSize: SIZE_BODY,
           borderRadius: "8px",
           transition:
@@ -178,7 +179,7 @@ const theme = createTheme({
         ...inputStyles,
         pill: {
           fontSize: SIZE_META,
-          fontWeight: 500,
+          fontWeight: 600,
           backgroundColor: "var(--oct-surface-3)",
           color: "var(--oct-strong)",
           border: "1px solid var(--oct-line)",
@@ -207,7 +208,7 @@ const theme = createTheme({
         },
         label: {
           fontSize: SIZE_BODY,
-          fontWeight: 500,
+          fontWeight: 700,
           color: "var(--oct-muted)",
           transition: "color 150ms",
         },
@@ -221,7 +222,7 @@ const theme = createTheme({
     Pagination: Pagination.extend({
       styles: {
         control: {
-          fontWeight: 500,
+          fontWeight: 700,
           fontSize: SIZE_BODY,
           border: "1px solid var(--oct-line)",
           backgroundColor: "var(--oct-surface)",
@@ -243,19 +244,19 @@ const theme = createTheme({
         dropdown: {
           border: "1px solid var(--oct-line)",
           boxShadow: "var(--oct-shadow-overlay)",
-          padding: "4px",
+          padding: "6px",
         },
         item: {
           borderRadius: "7px",
           fontSize: SIZE_BODY,
-          fontWeight: 500,
-          minHeight: "32px",
+          fontWeight: 600,
+          minHeight: "34px",
           transition: "background-color 150ms, color 150ms",
         },
         label: {
           color: "var(--oct-muted)",
           fontSize: SIZE_MICRO,
-          fontWeight: 500,
+          fontWeight: 700,
           letterSpacing: "0.05em",
           textTransform: "uppercase",
         },
@@ -279,7 +280,7 @@ const theme = createTheme({
     Alert: Alert.extend({
       defaultProps: { radius: "lg", variant: "light" },
       styles: {
-        title: { fontSize: SIZE_BODY, fontWeight: 500 },
+        title: { fontSize: SIZE_BODY, fontWeight: 700 },
         message: { fontSize: SIZE_BODY },
       },
     }),
@@ -293,7 +294,7 @@ const theme = createTheme({
       },
       styles: {
         tooltip: {
-          fontWeight: 400,
+          fontWeight: 500,
           fontSize: SIZE_META,
           backgroundColor: "var(--oct-inverse)",
           color: "var(--oct-inverse-fg)",

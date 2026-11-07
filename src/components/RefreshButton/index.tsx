@@ -13,7 +13,7 @@ const RefreshButton = (props: {
     <Tooltip label={label}>
       <ActionIcon
         variant="default"
-        size={34}
+        size={36}
         radius="md"
         aria-label={label}
         aria-busy={props.loading || undefined}

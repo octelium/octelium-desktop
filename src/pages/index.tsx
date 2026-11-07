@@ -54,7 +54,7 @@ const Root = () => {
           {showContent ? (
             <div
               key={location.pathname}
-              className="mx-auto flex w-full max-w-5xl animate-page-in flex-col px-6 pt-6 pb-10"
+              className="mx-auto flex min-h-full w-full max-w-[var(--page-max-width)] animate-page-in flex-col px-6 pt-6 pb-10"
             >
               {trayError && (
                 <Notice

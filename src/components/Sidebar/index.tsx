@@ -21,9 +21,10 @@ import { NavLink } from "react-router-dom";
 import { twMerge } from "@/utils/tailwind";
 
 const rowClass =
-  "flex h-8 w-full items-center gap-2.5 rounded-lg px-2.5 text-ui outline-none transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-focus";
+  "flex min-h-9 w-full items-center gap-2.5 rounded-lg px-2.5 text-ui outline-none transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-focus";
 
-const inactiveClass = "text-body hover:bg-surface-3 hover:text-strong";
+const inactiveClass =
+  "font-normal text-body hover:bg-surface-active/50 hover:text-strong";
 
 const NavItem = (props: {
   to: string;
@@ -36,7 +37,7 @@ const NavItem = (props: {
       twMerge(
         rowClass,
         isActive
-          ? "bg-surface font-medium text-strong shadow-card ring-1 ring-line"
+          ? "bg-surface font-semibold text-strong shadow-card ring-1 ring-line"
           : inactiveClass,
       )
     }
@@ -58,13 +59,17 @@ const NavItem = (props: {
 const ResourceLink = (props: {
   href: string;
   title: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: React.ComponentType<{
+    size?: number;
+    strokeWidth?: number;
+    className?: string;
+  }>;
 }) => (
   <ExternalLink
     href={props.href}
     className={twMerge(rowClass, inactiveClass, "group")}
   >
-    <props.icon size={16} className="flex-none" />
+    <props.icon size={16} strokeWidth={1.75} className="flex-none" />
     <span className="min-w-0 flex-1 truncate">{props.title}</span>
     <ArrowUpRight
       size={13}
@@ -80,16 +85,16 @@ export default function Sidebar(props: { onSignOut: (domain: string) => void }) 
   const authenticated = isAuthenticated(state);
 
   return (
-    <aside className="flex w-[248px] flex-none flex-col border-r border-line bg-app">
-      <div className="flex-none p-3">
+    <aside className="flex w-[264px] flex-none flex-col border-r border-line bg-app">
+      <div className="flex-none p-2">
         <DomainSwitcher />
       </div>
 
       <nav
         aria-label="Application navigation"
-        className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto overscroll-contain px-3 pt-1 pb-3"
+        className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto overscroll-contain px-2 pt-2 pb-4"
       >
-        <div className="flex flex-col gap-0.5">
+        <div className="flex flex-col gap-1">
           {authenticated ? (
             <>
               <NavItem to="/connection" title="Connection" icon={Activity} />
@@ -102,8 +107,8 @@ export default function Sidebar(props: { onSignOut: (domain: string) => void }) 
           <NavItem to="/settings" title="Settings" icon={SettingsIcon} />
         </div>
 
-        <div className="flex flex-col gap-0.5">
-          <span className="mb-1 px-2.5 text-micro font-medium tracking-[0.06em] text-faint uppercase">
+        <div className="flex flex-col gap-1">
+          <span className="mb-1 px-2.5 text-xs font-medium text-muted">
             Resources
           </span>
           <ResourceLink
@@ -119,14 +124,14 @@ export default function Sidebar(props: { onSignOut: (domain: string) => void }) 
         </div>
       </nav>
 
-      <div className="flex flex-none flex-col gap-0.5 border-t border-line p-3">
+      <div className="flex flex-none flex-col gap-1 border-t border-line p-2">
         <NavItem to="/diagnostics" title="Diagnostics" icon={Stethoscope} />
         {authenticated && domain && (
           <button
             type="button"
             className={twMerge(
               rowClass,
-              "text-left text-body hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-500/10 dark:hover:text-rose-300",
+              "text-left font-normal text-body hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-500/10 dark:hover:text-rose-300",
             )}
             onClick={() => props.onSignOut(domain)}
           >
@@ -134,7 +139,7 @@ export default function Sidebar(props: { onSignOut: (domain: string) => void }) 
             <span className="truncate">Sign out</span>
           </button>
         )}
-        <div className="mt-2 px-2.5 text-micro text-faint">
+        <div className="mt-1 px-2.5 pb-1 text-micro font-normal text-muted">
           Octelium Desktop {currentAppVersion ?? "development build"}
         </div>
       </div>

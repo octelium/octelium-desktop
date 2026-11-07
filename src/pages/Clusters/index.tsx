@@ -120,7 +120,7 @@ const ClusterItem = (props: { item: DomainState }) => {
               navigate("/connection");
             }}
           >
-            <span className="relative flex h-9 w-9 flex-none items-center justify-center rounded-lg bg-brand text-brand-fg dark:ring-1 dark:ring-line-strong dark:ring-inset">
+            <span className="relative flex h-9 w-9 flex-none items-center justify-center rounded-lg border border-line bg-surface-2 text-strong">
               <Mark className="h-5 w-5" aria-hidden />
               <span className="absolute -right-0.5 -bottom-0.5 flex rounded-full bg-surface p-[2px]">
                 <StatusDot
@@ -132,7 +132,7 @@ const ClusterItem = (props: { item: DomainState }) => {
             </span>
             <span className="min-w-0">
               <span className="flex min-w-0 items-center gap-2">
-                <span className="truncate text-sm font-medium text-strong">
+                <span className="truncate text-sm font-semibold text-strong">
                   {item.domain}
                 </span>
                 {item.domain === selected && <Label tone="sky">Selected</Label>}

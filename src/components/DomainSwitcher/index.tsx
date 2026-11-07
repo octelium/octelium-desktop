@@ -44,10 +44,10 @@ const DomainSwitcher = () => {
       <Menu.Target>
         <UnstyledButton
           aria-label="Open the Cluster menu"
-          className="group flex w-full items-center gap-2.5 rounded-xl border border-line bg-surface p-2 text-left shadow-card transition-[border-color,background-color] duration-150 hover:border-line-strong data-[expanded]:border-line-strong"
+          className="group flex w-full items-center gap-2.5 rounded-lg p-2 text-left transition-colors duration-150 hover:bg-surface-active/50 data-[expanded]:bg-surface-active/50"
         >
-          <span className="relative flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-brand text-brand-fg dark:ring-1 dark:ring-line-strong dark:ring-inset">
-            <Mark className="h-[18px] w-[18px]" aria-hidden />
+          <span className="relative flex h-8 w-8 flex-none items-center justify-center rounded-lg border border-line bg-surface text-strong shadow-card">
+            <Mark className="h-[17px] w-[17px]" aria-hidden />
             <span className="absolute -right-0.5 -bottom-0.5 flex rounded-full bg-surface p-[2px]">
               <StatusDot
                 size={8}
@@ -57,10 +57,10 @@ const DomainSwitcher = () => {
             </span>
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-ui font-medium text-strong">
+            <span className="block truncate text-ui leading-tight font-semibold text-strong">
               {selected ?? "Set up Octelium"}
             </span>
-            <span className="block truncate text-micro text-muted">
+            <span className="block truncate text-micro font-normal text-muted">
               {stateLabel}
             </span>
           </span>

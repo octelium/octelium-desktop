@@ -9,13 +9,13 @@ const PageHeader = (props: {
   <div className="mb-5 flex w-full items-start justify-between gap-4">
     <div className="flex min-w-0 flex-col gap-1">
       <div className="flex min-w-0 items-center gap-2">
-        <h1 className="truncate text-xl font-bold tracking-[-0.015em] text-strong">
+        <h1 className="truncate text-2xl leading-tight font-semibold tracking-[-0.015em] text-strong">
           {props.title}
         </h1>
         {props.addon}
       </div>
       {props.description && (
-        <p className="max-w-2xl text-ui text-muted">{props.description}</p>
+        <p className="max-w-2xl text-ui font-normal text-muted">{props.description}</p>
       )}
     </div>
     {props.actions && (

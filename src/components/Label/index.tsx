@@ -34,7 +34,7 @@ const Label = (props: {
     <span
       className={twMerge(
         "inline-flex max-w-full flex-none items-center gap-1.5 rounded-full border px-2 py-0.5",
-        "text-micro font-medium whitespace-nowrap",
+        "text-micro leading-4 font-semibold whitespace-nowrap",
         TONES[tone],
         props.className,
       )}

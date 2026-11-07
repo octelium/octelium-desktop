@@ -8,7 +8,7 @@ export const Card = (props: {
 }) => (
   <div
     className={twMerge(
-      "rounded-xl border border-line bg-surface shadow-card",
+      "rounded-xl border border-line bg-surface shadow-surface",
       props.interactive &&
         "transition-[border-color,box-shadow] duration-150 hover:border-line-strong hover:shadow-raised",
       props.className,
@@ -50,15 +50,15 @@ export const SectionCard = (props: {
 }) => (
   <section
     className={twMerge(
-      "min-w-0 rounded-xl border border-line bg-surface shadow-card",
+      "min-w-0 rounded-xl border border-line bg-surface shadow-surface",
       props.className,
     )}
   >
-    <header className="flex min-h-[52px] items-center justify-between gap-3 border-b border-line-subtle px-4 py-2.5">
+    <header className="flex items-center justify-between gap-3 border-b border-line-subtle px-4 py-3">
       <div className="flex min-w-0 items-center gap-2.5">
         {props.icon && <IconTile size="sm">{props.icon}</IconTile>}
         <div className="min-w-0">
-          <h2 className="truncate text-ui font-medium text-strong">
+          <h2 className="truncate text-ui font-semibold text-strong">
             {props.title}
           </h2>
           {props.description && (
@@ -72,7 +72,7 @@ export const SectionCard = (props: {
         <div className="flex flex-none items-center gap-2">{props.actions}</div>
       )}
     </header>
-    <div className={twMerge("p-4", props.bodyClassName)}>{props.children}</div>
+    <div className={twMerge("@container p-4", props.bodyClassName)}>{props.children}</div>
   </section>
 );
 

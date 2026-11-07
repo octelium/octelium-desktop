@@ -151,161 +151,168 @@ const AppSettings = () => {
         </Notice>
       )}
 
-      <SectionCard
-        title="Appearance"
-        description="How this application looks on this device"
-        icon={<SunMoon size={14} strokeWidth={2.25} />}
-      >
-        <SettingRow
-          title="Theme"
-          description="System follows the appearance of your operating system."
-        >
-          <SegmentedControl
-            aria-label="Theme"
-            size="sm"
-            data={THEMES}
-            value={prefs.theme}
-            onChange={(value) => set({ theme: value as ThemeMode })}
-          />
-        </SettingRow>
-      </SectionCard>
-
-      <SectionCard
-        title="Startup and window"
-        description="How the application starts and closes"
-        icon={<AppWindow size={14} strokeWidth={2.25} />}
-      >
-        <SettingRow
-          title="Launch at login"
-          description="Start the Octelium application when you sign in to this machine."
-        >
-          <Switch
-            aria-label="Launch at login"
-            checked={prefs.launchAtLogin}
-            onChange={(event) =>
-              void setLaunchAtLogin(event.currentTarget.checked)
-            }
-          />
-        </SettingRow>
-
-        <SettingRow
-          title="Close to the tray"
-          description="Closing the window hides it instead of quitting. Your Connections keep running either way."
-        >
-          <Switch
-            aria-label="Close to the tray"
-            checked={prefs.closeToTray}
-            onChange={(event) => {
-              const value = event.currentTarget.checked;
-              set({
-                closeToTray: value,
-                startMinimized: value ? prefs.startMinimized : false,
-              });
-            }}
-          />
-        </SettingRow>
-
-        <SettingRow
-          title="Start minimized"
-          description={
-            prefs.closeToTray
-              ? "Keep the window hidden in the system tray at startup."
-              : "Requires closing to the tray."
-          }
-        >
-          <Switch
-            aria-label="Start minimized"
-            disabled={!prefs.closeToTray}
-            checked={prefs.startMinimized}
-            onChange={(event) =>
-              set({ startMinimized: event.currentTarget.checked })
-            }
-          />
-        </SettingRow>
-      </SectionCard>
-
-      <SectionCard
-        title="Notifications"
-        description="Desktop notifications of this application"
-        icon={<Bell size={14} strokeWidth={2.25} />}
-      >
-        <SettingRow
-          title="Connection notifications"
-          description="Show a desktop notification whenever a Connection is established or lost."
-        >
-          <Switch
-            aria-label="Connection notifications"
-            checked={prefs.notifications}
-            onChange={(event) =>
-              void setNotifications(event.currentTarget.checked)
-            }
-          />
-        </SettingRow>
-      </SectionCard>
-
-      <SectionCard
-        title="Clusters"
-        description="How the Clusters of this device are presented"
-        icon={<Layers size={14} strokeWidth={2.25} />}
-      >
-        <SettingRow
-          title="Multiple Clusters"
-          description="Show every configured domain in the Cluster switcher. Most people only need one domain."
-        >
-          <Switch
-            aria-label="Multiple Clusters"
-            checked={prefs.multiCluster}
-            onChange={(event) =>
-              set({ multiCluster: event.currentTarget.checked })
-            }
-          />
-        </SettingRow>
-      </SectionCard>
-
-      <SectionCard
-        title="About"
-        description="Octelium is free and open source software"
-        icon={<Info size={14} strokeWidth={2.25} />}
-      >
-        <SettingRow
-          title="Current version"
-          description={
-            currentAppVersion
-              ? "The version installed on this device."
-              : "This build was not created from a release tag."
-          }
-        >
-          <span className="font-mono text-xs font-medium text-strong" data-selectable>
-            {currentAppVersion ?? "Development build"}
-          </span>
-        </SettingRow>
-
-        {latestVersionQuery.data && (
-          <SettingRow
-            title="Latest release"
-            description={
-              updateAvailable
-                ? "A newer release is available for download."
-                : "The latest published release reported by GitHub."
-            }
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+        <div className="flex min-w-0 flex-col gap-4">
+          <SectionCard
+            title="Appearance"
+            description="How this application looks on this device"
+            icon={<SunMoon size={14} strokeWidth={2.25} />}
           >
-            <div className="flex items-center gap-2">
-              {updateAvailable && (
-                <Label tone="sky" dot>
-                  Update available
-                </Label>
-              )}
-              <ExternalLink
-                href={RELEASES_PAGE_URL}
-                className="inline-flex items-center gap-1 rounded-md font-mono text-xs font-medium text-strong hover:underline"
+            <SettingRow
+              title="Theme"
+              description="System follows your device."
+            >
+              <SegmentedControl
+                aria-label="Theme"
+                size="xs"
+                data={THEMES}
+                value={prefs.theme}
+                onChange={(value) => set({ theme: value as ThemeMode })}
+              />
+            </SettingRow>
+          </SectionCard>
+
+          <SectionCard
+            title="Startup and window"
+            description="How the application starts and closes"
+            icon={<AppWindow size={14} strokeWidth={2.25} />}
+          >
+            <SettingRow
+              title="Launch at login"
+              description="Start the Octelium application when you sign in to this machine."
+            >
+              <Switch
+                aria-label="Launch at login"
+                checked={prefs.launchAtLogin}
+                onChange={(event) =>
+                  void setLaunchAtLogin(event.currentTarget.checked)
+                }
+              />
+            </SettingRow>
+
+            <SettingRow
+              title="Close to the tray"
+              description="Closing the window hides it instead of quitting. Your Connections keep running either way."
+            >
+              <Switch
+                aria-label="Close to the tray"
+                checked={prefs.closeToTray}
+                onChange={(event) => {
+                  const value = event.currentTarget.checked;
+                  set({
+                    closeToTray: value,
+                    startMinimized: value ? prefs.startMinimized : false,
+                  });
+                }}
+              />
+            </SettingRow>
+
+            <SettingRow
+              title="Start minimized"
+              description={
+                prefs.closeToTray
+                  ? "Keep the window hidden in the system tray at startup."
+                  : "Requires closing to the tray."
+              }
+            >
+              <Switch
+                aria-label="Start minimized"
+                disabled={!prefs.closeToTray}
+                checked={prefs.startMinimized}
+                onChange={(event) =>
+                  set({ startMinimized: event.currentTarget.checked })
+                }
+              />
+            </SettingRow>
+          </SectionCard>
+
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-4">
+          <SectionCard
+            title="Notifications"
+            description="Desktop notifications of this application"
+            icon={<Bell size={14} strokeWidth={2.25} />}
+          >
+            <SettingRow
+              title="Connection notifications"
+              description="Show a desktop notification whenever a Connection is established or lost."
+            >
+              <Switch
+                aria-label="Connection notifications"
+                checked={prefs.notifications}
+                onChange={(event) =>
+                  void setNotifications(event.currentTarget.checked)
+                }
+              />
+            </SettingRow>
+          </SectionCard>
+
+          <SectionCard
+            title="Clusters"
+            description="How the Clusters of this device are presented"
+            icon={<Layers size={14} strokeWidth={2.25} />}
+          >
+            <SettingRow
+              title="Multiple Clusters"
+              description="Show every configured domain in the Cluster switcher. Most people only need one domain."
+            >
+              <Switch
+                aria-label="Multiple Clusters"
+                checked={prefs.multiCluster}
+                onChange={(event) =>
+                  set({ multiCluster: event.currentTarget.checked })
+                }
+              />
+            </SettingRow>
+          </SectionCard>
+
+          <SectionCard
+            title="About"
+            description="Octelium is free and open source software"
+            icon={<Info size={14} strokeWidth={2.25} />}
+          >
+            <SettingRow
+              title="Current version"
+              description={
+                currentAppVersion
+                  ? "The version installed on this device."
+                  : "This build was not created from a release tag."
+              }
+            >
+              <span className="font-mono text-xs font-medium text-strong" data-selectable>
+                {currentAppVersion ?? "Development build"}
+              </span>
+            </SettingRow>
+
+            {latestVersionQuery.data && (
+              <SettingRow
+                title="Latest release"
+                description={
+                  updateAvailable
+                    ? "A newer release is available for download."
+                    : "The latest published release reported by GitHub."
+                }
               >
-                {latestVersionQuery.data}
-                <ArrowUpRight size={12} aria-hidden />
-              </ExternalLink>
-            </div>
-          </SettingRow>
-        )}
-      </SectionCard>
+                <div className="flex items-center gap-2">
+                  {updateAvailable && (
+                    <Label tone="sky" dot>
+                      Update available
+                    </Label>
+                  )}
+                  <ExternalLink
+                    href={RELEASES_PAGE_URL}
+                    className="inline-flex items-center gap-1 rounded-md font-mono text-xs font-medium text-strong hover:underline"
+                  >
+                    {latestVersionQuery.data}
+                    <ArrowUpRight size={12} aria-hidden />
+                  </ExternalLink>
+                </div>
+              </SettingRow>
+            )}
+          </SectionCard>
+        </div>
+      </div>
     </div>
   );
 };
